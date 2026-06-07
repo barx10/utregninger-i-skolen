@@ -37,8 +37,7 @@ export default function App() {
     nettoManuell: 38000,
     alder: 40,
     forsteYrkesar: false,
-    feriepengegrunnlagOverstyr: false,
-    feriepengegrunnlag: 0,
+    feriepengegrunnlag: '', // tom → estimat basert på årets lønn
   })
 
   const set = (patch) => setValg((v) => ({ ...v, ...patch }))
@@ -74,12 +73,13 @@ export default function App() {
       nettoManuell: Number(valg.nettoManuell) || 0,
       alder: Number(valg.alder) || 40,
       forsteYrkesar: valg.forsteYrkesar,
-      feriepengegrunnlag: valg.feriepengegrunnlagOverstyr
-        ? Number(valg.feriepengegrunnlag) || bruttoAarslonn
-        : null,
+      feriepengegrunnlag:
+        valg.feriepengegrunnlag !== '' ? Number(valg.feriepengegrunnlag) : null,
       pensjonProsent: 2.0,
     })
   }, [bruttoAarslonn, valg])
+
+  const fpErEstimat = valg.feriepengegrunnlag === ''
 
   return (
     <div className="app-bg min-h-screen">
@@ -171,41 +171,35 @@ export default function App() {
                   </InfoKnapp>
                 </span>
               </label>
-              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+              <div>
+                <span className="label flex items-center gap-1.5">
+                  Feriepengegrunnlag (lønn utbetalt i fjor)
+                  <InfoKnapp tittel="Feriepengegrunnlag">
+                    Feriepenger er 12 % (14,3 % fra 60 år) av <strong>all lønn du fikk utbetalt
+                    forrige kalenderår</strong> – ikke av årets lønn. Finn summen på
+                    desember-lønnsslippen. Sensorgodtgjøring inngår ikke i Oslo.
+                  </InfoKnapp>
+                </span>
                 <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600"
-                  checked={valg.feriepengegrunnlagOverstyr}
-                  onChange={(e) =>
-                    set({
-                      feriepengegrunnlagOverstyr: e.target.checked,
-                      feriepengegrunnlag: bruttoAarslonn,
-                    })
-                  }
+                  type="number"
+                  className="field max-w-[220px]"
+                  placeholder={`Estimat: ${Math.round(bruttoAarslonn)}`}
+                  value={valg.feriepengegrunnlag}
+                  onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
                 />
-                Oppgi feriepengegrunnlag selv
-              </label>
-              {valg.feriepengegrunnlagOverstyr && (
-                <div className="max-w-[220px]">
-                  <input
-                    type="number"
-                    className="field"
-                    value={valg.feriepengegrunnlag}
-                    onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    All lønn utbetalt forrige kalenderår (fra desemberlønnsslipp). Sensor­godtgjøring
-                    inngår ikke i Oslo.
-                  </p>
-                </div>
-              )}
+                <p className="mt-1.5 text-xs text-slate-500">
+                  {fpErEstimat
+                    ? 'La stå tomt for et grovt estimat basert på årets lønn. For et nøyaktig tall, fyll inn fjorårets utbetalte lønn.'
+                    : 'Bruker ditt oppgitte grunnlag fra i fjor.'}
+                </p>
+              </div>
             </div>
           </div>
         </Seksjon>
 
         <Seksjon nr="5" tittel="Resultater" undertittel="Estimert lønn, skatt og feriepenger">
           {resultat ? (
-            <Resultater r={resultat} />
+            <Resultater r={resultat} fpErEstimat={fpErEstimat} />
           ) : (
             <InfoBoks tone="amber">
               Velg stilling og lønn over for å se beregningen.

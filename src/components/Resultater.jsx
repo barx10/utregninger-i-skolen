@@ -21,7 +21,7 @@ function Stat({ label, verdi, tone = 'default', stor = false, info }) {
   )
 }
 
-export default function Resultater({ r }) {
+export default function Resultater({ r, fpErEstimat = false }) {
   return (
     <motion.div
       key={Math.round(r.bruttoAarslonn)}
@@ -43,9 +43,13 @@ export default function Resultater({ r }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
-          label="Feriepenger"
+          label={fpErEstimat ? 'Feriepenger (estimat)' : 'Feriepenger'}
           verdi={r.feriepenger}
-          info={`${r.fpProsent} % av feriepengegrunnlaget (${kr2(r.feriepengegrunnlag)}).`}
+          info={
+            fpErEstimat
+              ? `${r.fpProsent} % av et estimert grunnlag (${kr2(r.feriepengegrunnlag)} = årets lønn). Feriepenger beregnes egentlig av FJORÅRETS utbetalte lønn – fyll inn det i seksjon 4 for et nøyaktig tall.`
+              : `${r.fpProsent} % av feriepengegrunnlaget fra i fjor (${kr2(r.feriepengegrunnlag)}).`
+          }
         />
         <Stat
           label="Netto i juni"

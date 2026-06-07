@@ -99,6 +99,34 @@ test('Desember tabelltrekk: halvt trekk', () => {
   assert.equal(des.netto, 42500)
 })
 
+test('Regresjon mot faktisk lønnsslipp (Oslo, LR931 alt2 ltr50, kontaktlærer)', () => {
+  // Verifisert mot ekte junislipp 2025: ferietrekk og feriepenger til øret.
+  const aarslonnFaktisk = 65158.33 * 12 // 781 900
+  // Ferietrekk: årslønn / 260 * 25
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: aarslonnFaktisk,
+    metode: 'tabell',
+    alder: 50,
+    feriepengegrunnlag: 702006, // fjorårets utbetalte lønn (84 240 / 12 %)
+    pensjonProsent: 2,
+  })
+  assert.ok(Math.abs(r.juni.ferietrekk - 75182.69) < 0.5, `ferietrekk ${r.juni.ferietrekk}`)
+  assert.ok(Math.abs(r.feriepenger - 84240.72) < 1, `feriepenger ${r.feriepenger}`)
+})
+
+test('Feriepengegrunnlag faller tilbake til årets lønn når ikke oppgitt', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 800000,
+    metode: 'tabell',
+    alder: 40,
+    feriepengegrunnlag: null,
+  })
+  assert.equal(r.feriepengegrunnlag, 800000)
+  assert.ok(Math.abs(r.feriepenger - 800000 * 0.12) < 0.01)
+})
+
 test('beregnAlt: 12 måneder, juni og desember markert', () => {
   const r = beregnAlt({
     data,
