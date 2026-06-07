@@ -21,14 +21,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const data = JSON.parse(readFileSync(join(__dirname, '../data/tariff2026.json'), 'utf8'))
 const felles = data.felles
 
-test('Oslo: LR 931 alt 02 ansiennitet 16 → ltr 50 → 843 927', () => {
+test('Oslo: LR 931 alt 02 ansiennitet 16 → ltr 50 → 844 000', () => {
   const r = osloBruttoFraStige(data, 931, 2, 16)
   assert.equal(r.ltr, 50)
-  assert.equal(r.aarslonn, 843927)
+  assert.equal(r.aarslonn, 844000)
 })
 
 test('Oslo: direkte lønnstrinn 50', () => {
-  assert.equal(osloBruttoFraLtr(data, 50).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50).aarslonn, 844000)
 })
 
 test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', () => {
@@ -37,9 +37,9 @@ test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', (
   assert.equal(osloBruttoFraStige(data, 931, 2, 16, 2025).aarslonn, 810300)
   assert.equal(Math.round(810300 / 12), 67525)
   // 2026-satsen er høyere
-  assert.equal(osloBruttoFraLtr(data, 50, 2026).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50, 2026).aarslonn, 844000)
   // Ugyldig år faller tilbake til 2026
-  assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 844000)
 })
 
 test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
@@ -201,7 +201,7 @@ test('beregnAlt: tabellTrekkMnd overstyrer estimatet og halveres i desember', ()
 test('beregnAlt: 12 måneder, juni og desember markert', () => {
   const r = beregnAlt({
     data,
-    bruttoAarslonn: 843927,
+    bruttoAarslonn: 844000,
     metode: 'tabell',
     alder: 40,
     pensjonProsent: 2,
@@ -210,5 +210,5 @@ test('beregnAlt: 12 måneder, juni og desember markert', () => {
   assert.equal(r.maaneder[5].type, 'juni')
   assert.equal(r.maaneder[11].type, 'desember')
   assert.ok(r.aar.netto > 0)
-  assert.ok(Math.abs(r.maanedsbrutto - 843927 / 12) < 0.01)
+  assert.ok(Math.abs(r.maanedsbrutto - 844000 / 12) < 0.01)
 })
