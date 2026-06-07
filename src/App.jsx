@@ -307,8 +307,8 @@ export default function App() {
                     />
                     <p className="mt-1.5 text-xs text-slate-500">
                       {fpErEstimat
-                        ? 'La stå tomt for et grovt estimat basert på årets lønn. For nøyaktig tall: fyll inn fjorårets utbetalte lønn (Lønn honorar m.m. minus feriepenger utbetalt).'
-                        : 'Appen regner 12 % / 14,3 % av dette grunnlaget.'}
+                        ? 'La stå tomt for et grovt estimat basert på årets lønn. NB: dette er IKKE total årsinntekt – hold feriepenger, stipend og andre arbeidsgivere utenfor (fastlønn + faste tillegg − trekk i lønn for ferie).'
+                        : 'Appen regner 12 % / 14,3 % av dette grunnlaget. Husk: ikke total årsinntekt – feriepenger og stipend teller ikke.'}
                     </p>
                   </div>
                 )}
