@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 import {
+  tabellTrekkMaaned,
   beregnTrinnskatt,
   beregnArsskatt,
   beregnFeriepenger,
@@ -158,6 +159,34 @@ test('Feriepengegrunnlag faller tilbake til årets lønn når ikke oppgitt', () 
   })
   assert.equal(r.feriepengegrunnlag, 800000)
   assert.ok(Math.abs(r.feriepenger - 800000 * 0.12) < 0.01)
+})
+
+test('Skattetabell-oppslag: tabell 8100 (2025) mot desemberslipp', () => {
+  const tab = JSON.parse(
+    readFileSync(join(__dirname, '../../public/skattetabeller/2025.json'), 'utf8'),
+  )
+  // Desemberslipp 2025 (tabell 8100): halvt trekk 10 656 → fullt ~21 312
+  const full = tabellTrekkMaaned(tab, '8100', 69131)
+  assert.ok(full > 20000 && full < 22000, `fikk ${full}`)
+  // Innenfor ett tabelltrinn av slippen (rundingsavvik i grunnlaget)
+  assert.ok(Math.abs(full / 2 - 10656) < 200, `halv ${full / 2}`)
+  // Ukjent tabell → null, lav inntekt → 0
+  assert.equal(tabellTrekkMaaned(tab, '9999', 60000), null)
+  assert.equal(tabellTrekkMaaned(tab, '8100', 5000), 0)
+})
+
+test('beregnAlt: tabellTrekkMnd overstyrer estimatet og halveres i desember', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 829580,
+    metode: 'tabell',
+    alder: 50,
+    tabellTrekkMnd: 21100,
+  })
+  assert.equal(r.brukerTabell, true)
+  assert.equal(r.ordinaerSkatt, 21100)
+  assert.equal(r.desember.skatt, 10550)
+  assert.equal(r.juni.skatt, 0)
 })
 
 test('beregnAlt: 12 måneder, juni og desember markert', () => {

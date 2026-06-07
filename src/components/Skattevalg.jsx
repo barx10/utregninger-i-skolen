@@ -1,4 +1,4 @@
-import { InfoBoks } from './InfoBoks.jsx'
+import { InfoBoks, InfoKnapp } from './InfoBoks.jsx'
 
 const METODER = [
   {
@@ -43,10 +43,31 @@ export default function Skattevalg({ valg, set }) {
       </div>
 
       {valg.metode === 'tabell' && (
-        <InfoBoks tone="blue">
-          Skatten estimeres ut fra 2026-satser (trygdeavgift 7,7 %, 22 % alminnelig inntekt,
-          trinnskatt og minstefradrag). Dette er et estimat – din faktiske tabell kan avvike noe.
-        </InfoBoks>
+        <div className="space-y-3">
+          <div className="max-w-xs">
+            <span className="label flex items-center gap-1.5">
+              Skattekort-tabell (valgfritt)
+              <InfoKnapp tittel="Tabellnummer">
+                Oppgi tabellnummeret fra skattekortet/lønnsslippen din (f.eks. 8100) for
+                <strong> nøyaktig</strong> månedlig trekk fra Skatteetatens offisielle tabeller.
+                La stå tomt for et generelt estimat.
+              </InfoKnapp>
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="F.eks. 8100"
+              className="field"
+              value={valg.tabellnr}
+              onChange={(e) => set({ tabellnr: e.target.value })}
+            />
+          </div>
+          <InfoBoks tone={valg.tabellnr ? 'green' : 'blue'}>
+            {valg.tabellnr
+              ? 'Bruker Skatteetatens offisielle tabelltrekk for valgt år – ingen trekk i juni, halvt trekk i desember.'
+              : 'Uten tabellnummer estimeres skatten fra årssatser (trygdeavgift 7,7 %, 22 % alminnelig inntekt, trinnskatt, minstefradrag). Oppgi tabellnummer over for nøyaktig trekk.'}
+          </InfoBoks>
+        </div>
       )}
 
       {valg.metode === 'prosent' && (

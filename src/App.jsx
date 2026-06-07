@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import data from './data/tariff2026.json'
 import logo from './assets/laererliv-logo.png'
 
@@ -7,6 +7,7 @@ import {
   osloBruttoFraStige,
   osloBruttoFraLtr,
   ksGarantilonn,
+  tabellTrekkMaaned,
   kr2,
 } from './utils/beregninger.js'
 
@@ -24,6 +25,7 @@ export default function App() {
   const [tariff, setTariff] = useState('oslo')
   const [aar, setAar] = useState(2026)
   const [tilleggListe, setTilleggListe] = useState([])
+  const [skattetabell, setSkattetabell] = useState({}) // { 2025: data, 2026: data }
 
   const [valg, setValg] = useState({
     osloKode: '965', // Lektor
@@ -38,6 +40,7 @@ export default function App() {
     ksOverstyr: false,
     ksBrutto: 650000,
     metode: 'tabell',
+    tabellnr: '', // skattekort-tabellnummer for nøyaktig tabelltrekk
     prosent: 35,
     nettoManuell: 38000,
     alder: 40,
@@ -78,6 +81,27 @@ export default function App() {
   const sumTillegg = tilleggListe.reduce((s, t) => s + t.belop, 0)
   const bruttoAarslonn = baseLonn + sumTillegg
 
+  // Last Skatteetatens månedstabell for valgt år når brukeren oppgir tabellnummer.
+  useEffect(() => {
+    if (valg.metode !== 'tabell' || !valg.tabellnr) return
+    if (skattetabell[aar]) return
+    let avbrutt = false
+    fetch(`${import.meta.env.BASE_URL}skattetabeller/${aar}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!avbrutt && d) setSkattetabell((s) => ({ ...s, [aar]: d }))
+      })
+      .catch(() => {})
+    return () => {
+      avbrutt = true
+    }
+  }, [valg.metode, valg.tabellnr, aar, skattetabell])
+
+  const tabellTrekkMnd =
+    valg.metode === 'tabell' && valg.tabellnr && skattetabell[aar]
+      ? tabellTrekkMaaned(skattetabell[aar], valg.tabellnr, bruttoAarslonn / 12)
+      : null
+
   const resultat = useMemo(() => {
     if (!bruttoAarslonn) return null
     return beregnAlt({
@@ -96,9 +120,10 @@ export default function App() {
         valg.fpModus === 'belop' && valg.feriepengerBelop !== ''
           ? Number(valg.feriepengerBelop)
           : null,
+      tabellTrekkMnd,
       pensjonProsent: 2.0,
     })
-  }, [bruttoAarslonn, valg])
+  }, [bruttoAarslonn, valg, tabellTrekkMnd])
 
   const fpErEstimat =
     (valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag === '') ||
