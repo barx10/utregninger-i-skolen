@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Premium ambient background */
+.app-bg {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(51, 133, 251, 0.10), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, rgba(22, 191, 142, 0.10), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f9 100%);
+}
+
+/* Glassmorphism card */
+.glass {
+  @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-card rounded-3xl;
+}
+
+.section-num {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-soft;
+}
+
+/* Inputs */
+.field {
+  @apply w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-slate-800 shadow-sm outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100;
+}
+
+.label {
+  @apply mb-1.5 block text-sm font-semibold text-slate-600;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+}
+
+/* Custom scrollbar for tables */
+.thin-scroll::-webkit-scrollbar { height: 8px; }
+.thin-scroll::-webkit-scrollbar-thumb { @apply rounded-full bg-slate-300; }
