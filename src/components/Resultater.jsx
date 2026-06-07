@@ -68,7 +68,16 @@ export default function Resultater({ r, fpErEstimat = false }) {
 
       {/* Detaljer skatt */}
       <div className="rounded-2xl border border-slate-200 bg-white/60 p-5">
-        <p className="mb-3 text-sm font-semibold text-slate-700">Skatteberegning (estimat 2026)</p>
+        <p className="mb-3 text-sm font-semibold text-slate-700">
+          {r.brukerTabell ? 'Skatt – nøyaktig tabelltrekk' : 'Skatteberegning (estimat)'}
+        </p>
+        {r.brukerTabell && (
+          <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            Månedlig trekk hentet fra Skatteetatens offisielle tabell:{' '}
+            <strong>{kr2(r.trekkMnd)}</strong> per ordinær måned. Postene under er kun et
+            informativt estimat på fordelingen.
+          </p>
+        )}
         <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
           <Rad k="Trygdeavgift (7,7 %)" v={r.skattInfo.trygdeavgift} />
           <Rad k="Skatt alminnelig inntekt (22 %)" v={r.skattInfo.skattAlminnelig} />

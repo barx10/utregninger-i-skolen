@@ -11,7 +11,8 @@ Laget for [laererliv.no](https://laererliv.no).
 - **To tariffområder:** Oslo kommune (lønnsrammer/lønnstrinn) og KS (garantilønn).
 - **Stillingskoder & ansiennitet:** Alle Oslo-koder og KS-kategorier, ansiennitet 0/6/8/10/16 år.
 - **Tillegg:** Kontaktlærer-hjelpeberegner, funksjons- og lokale tillegg (inngår i feriepengegrunnlaget).
-- **Skatt 2026:** Tabelltrekk (fordelt på 10,5 mnd), prosenttrekk eller oppgi netto selv.
+- **Skatt:** Tabelltrekk (fordelt på 10,5 mnd), prosenttrekk eller oppgi netto selv. Oppgi
+  skattekort-tabellnummer for **nøyaktig** månedlig trekk fra Skatteetatens offisielle tabeller.
 - **Feriepenger:** 12 % / 14,3 % (60+), korrekt ferietrekk (årslønn/260 × 25 dager).
 - **Spesialregler:** Første yrkesår (full lønn i juni), halv skatt i desember, pensjonsfradrag.
 - **Årsoversikt:** 12-måneders tabell + stolpegraf med juni og desember markert.
@@ -20,6 +21,8 @@ Laget for [laererliv.no](https://laererliv.no).
 
 - React 18 + Vite + Tailwind CSS + Framer Motion
 - Tariffdata i `src/data/tariff2026.json`
+- Skatteetatens månedstabeller i `public/skattetabeller/{2025,2026}.json` (lastes on-demand).
+  Generert fra Skatteetatens offisielle tabelltrekk i tekstformat.
 - All beregningslogikk i `src/utils/beregninger.js` (rene, testbare funksjoner)
 
 ## Utvikling
