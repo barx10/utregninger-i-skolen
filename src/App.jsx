@@ -31,9 +31,10 @@ export default function App() {
     ansiennitet: '16',
     alt: 1,
     ltrDirekte: 50,
-    osloOverstyr: false, // lokalt avvik: overstyr LR/ltr
+    osloOverstyr: false, // lokalt avvik: overstyr LR/ltr/brutto
     osloOverstyrLr: '',
     osloOverstyrLtr: '',
+    osloOverstyrBrutto: '',
     ksOverstyr: false,
     ksBrutto: 650000,
     metode: 'tabell',
@@ -54,7 +55,10 @@ export default function App() {
       if (kode.leder || !kode.har_stige) {
         return osloBruttoFraLtr(data, valg.ltrDirekte, aar)?.aarslonn ?? 0
       }
-      // Lokalt avvik: overstyr lønnstrinn direkte eller velg en annen lønnsramme.
+      // Lokalt avvik: brutto direkte > lønnstrinn direkte > annen lønnsramme.
+      if (valg.osloOverstyr && valg.osloOverstyrBrutto !== '') {
+        return Number(valg.osloOverstyrBrutto) || 0
+      }
       if (valg.osloOverstyr && valg.osloOverstyrLtr !== '') {
         return osloBruttoFraLtr(data, valg.osloOverstyrLtr, aar)?.aarslonn ?? 0
       }
