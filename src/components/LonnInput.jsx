@@ -70,10 +70,16 @@ export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
     // Lokalt avvik: brukeren kan overstyre lønnsramme og/eller lønnstrinn.
     const overstyr = !!valg.osloOverstyr
     const effektivLr = overstyr && valg.osloOverstyrLr ? valg.osloOverstyrLr : kode.lr
-    const direkteLtr = overstyr && valg.osloOverstyrLtr !== '' && valg.osloOverstyrLtr != null
-    const oppslag = direkteLtr
-      ? osloBruttoFraLtr(data, valg.osloOverstyrLtr, aar)
-      : osloBruttoFraStige(data, effektivLr, valg.alt, valg.ansiennitet, aar)
+    const direkteBrutto =
+      overstyr && valg.osloOverstyrBrutto !== '' && valg.osloOverstyrBrutto != null
+    const direkteLtr =
+      !direkteBrutto && overstyr && valg.osloOverstyrLtr !== '' && valg.osloOverstyrLtr != null
+    const laast = direkteBrutto || direkteLtr // ramme/alt/ansiennitet ignoreres
+    const oppslag = direkteBrutto
+      ? { ltr: null, aarslonn: Number(valg.osloOverstyrBrutto) || 0 }
+      : direkteLtr
+        ? osloBruttoFraLtr(data, valg.osloOverstyrLtr, aar)
+        : osloBruttoFraStige(data, effektivLr, valg.alt, valg.ansiennitet, aar)
 
     // Lønnsrammer for undervisningspersonale (ikke ledere 901–906).
     const undervisningsLr = Object.keys(data.oslo.lonnrammer)
@@ -82,7 +88,7 @@ export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
 
     return (
       <div className="space-y-4">
-        {!direkteLtr && (
+        {!laast && (
           <Ansiennitet value={valg.ansiennitet} onChange={(a) => set({ ansiennitet: a })} />
         )}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -99,7 +105,7 @@ export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
               <select
                 className="field"
                 value={effektivLr}
-                disabled={direkteLtr}
+                disabled={laast}
                 onChange={(e) => set({ osloOverstyrLr: e.target.value })}
               >
                 {undervisningsLr.map((lr) => (
@@ -128,7 +134,7 @@ export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
               max="25"
               className="field"
               value={valg.alt}
-              disabled={direkteLtr}
+              disabled={laast}
               onChange={(e) => set({ alt: e.target.value })}
             />
           </div>
@@ -149,38 +155,58 @@ export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
               }
             />
             <span className="flex items-center gap-1.5">
-              Lokalt avvik – overstyr lønnsramme/lønnstrinn
+              Lokalt avvik – overstyr lønnsramme/lønnstrinn/brutto
               <InfoKnapp tittel="Lokalt avvik">
                 Noen har lokalt forhandlet en annen lønnsramme eller et høyere lønnstrinn enn
-                stillingskoden tilsier. Velg riktig lønnsramme over, eller oppgi lønnstrinnet
-                ditt direkte fra lønnsslippen.
+                stillingskoden tilsier. Velg riktig lønnsramme over, oppgi lønnstrinnet direkte,
+                eller skriv inn brutto årslønn nøyaktig fra lønnsslippen (nyttig for deltid eller
+                måneder før et lønnsoppgjør er lagt inn).
               </InfoKnapp>
             </span>
           </label>
           {overstyr && (
-            <div className="mt-3 max-w-xs">
-              <label className="label">Eller oppgi lønnstrinn direkte (1–80)</label>
-              <input
-                type="number"
-                min="1"
-                max="80"
-                placeholder="La stå tomt for å bruke rammen"
-                className="field"
-                value={valg.osloOverstyrLtr}
-                onChange={(e) => set({ osloOverstyrLtr: e.target.value })}
-              />
-              {direkteLtr && (
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Lønnstrinn oppgitt direkte – alternativ og ansiennitet ignoreres.
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="label">Eller oppgi lønnstrinn direkte (1–80)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="80"
+                  placeholder="La stå tomt for å bruke rammen"
+                  className="field"
+                  value={valg.osloOverstyrLtr}
+                  disabled={direkteBrutto}
+                  onChange={(e) => set({ osloOverstyrLtr: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Eller brutto årslønn direkte (kr)</label>
+                <input
+                  type="number"
+                  placeholder="F.eks. 781900"
+                  className="field"
+                  value={valg.osloOverstyrBrutto}
+                  onChange={(e) => set({ osloOverstyrBrutto: e.target.value })}
+                />
+              </div>
+              {laast && (
+                <p className="text-xs text-slate-500 sm:col-span-2">
+                  {direkteBrutto
+                    ? 'Brutto årslønn oppgitt direkte – lønnsramme, alternativ og ansiennitet ignoreres.'
+                    : 'Lønnstrinn oppgitt direkte – alternativ og ansiennitet ignoreres.'}
                 </p>
               )}
             </div>
           )}
         </div>
 
-        {oppslag && oppslag.aarslonn != null ? (
-          <InfoBoks tone="green" tittel={`Lønnstrinn ${oppslag.ltr}`}>
-            Brutto årslønn ({aar}): <strong>{kr2(oppslag.aarslonn)}</strong>
+        {oppslag && oppslag.aarslonn ? (
+          <InfoBoks
+            tone="green"
+            tittel={oppslag.ltr != null ? `Lønnstrinn ${oppslag.ltr}` : 'Manuell brutto årslønn'}
+          >
+            Brutto årslønn{oppslag.ltr != null ? ` (${aar})` : ''}:{' '}
+            <strong>{kr2(oppslag.aarslonn)}</strong>
           </InfoBoks>
         ) : (
           <InfoBoks tone="amber">
