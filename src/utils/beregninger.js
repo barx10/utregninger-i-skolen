@@ -57,6 +57,23 @@ export function ksGarantilonn(data, kode, ansiennitet) {
 }
 
 // ---------------------------------------------------------------------------
+// Skattetabell-oppslag (Skatteetatens offisielle tabelltrekk, månedstabell)
+// ---------------------------------------------------------------------------
+
+// Slår opp nøyaktig månedlig tabelltrekk for et tabellnummer og månedsbrutto.
+// tabellData: { steg, tabeller: { "8100": { fra, trekk: [...] } } }
+export function tabellTrekkMaaned(tabellData, tabellnr, maanedsbrutto) {
+  if (!tabellData || !tabellnr) return null
+  const t = tabellData.tabeller?.[String(tabellnr).trim()]
+  if (!t) return null
+  const steg = tabellData.steg || 100
+  const i = Math.floor((maanedsbrutto - t.fra) / steg)
+  if (i < 0) return 0
+  if (i >= t.trekk.length) return t.trekk[t.trekk.length - 1]
+  return t.trekk[i]
+}
+
+// ---------------------------------------------------------------------------
 // Skatt
 // ---------------------------------------------------------------------------
 
@@ -213,14 +230,18 @@ export function beregnAlt({
   forsteYrkesar = false,
   feriepengegrunnlag = null, // hvis null → bruk bruttoAarslonn
   feriepengerDirekte = null, // oppgitt beløp («Opptjente feriepenger i år») – overstyrer %-beregning
+  tabellTrekkMnd = null, // nøyaktig månedlig tabelltrekk fra Skatteetatens tabell – overstyrer estimatet
   pensjonProsent = 2.0,
 }) {
   const felles = data.felles
   const maanedsbrutto = bruttoAarslonn / 12
 
   const skattInfo = beregnArsskatt(bruttoAarslonn, felles, pensjonProsent)
+  // Bruk nøyaktig tabelltrekk hvis oppgitt, ellers det beregnede estimatet.
+  const brukerTabell = metode === 'tabell' && tabellTrekkMnd != null
+  const trekkMnd = brukerTabell ? tabellTrekkMnd : skattInfo.trekkPerMaaned
   const skatteCtx = {
-    trekkPerMaaned: skattInfo.trekkPerMaaned,
+    trekkPerMaaned: trekkMnd,
     prosent,
     nettoManuell,
   }
@@ -290,6 +311,8 @@ export function beregnAlt({
     skattInfo,
     feriepenger,
     fpProsent,
+    brukerTabell,
+    trekkMnd,
     feriepengegrunnlag: grunnlagVist,
     juni,
     desember,
