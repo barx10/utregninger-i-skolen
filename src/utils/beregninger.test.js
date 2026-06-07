@@ -30,6 +30,17 @@ test('Oslo: direkte lønnstrinn 50', () => {
   assert.equal(osloBruttoFraLtr(data, 50).aarslonn, 843927)
 })
 
+test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', () => {
+  // Desemberslipp 2025: månedslønn 67 525 = 810 300/år (2025-tabell ltr 50)
+  assert.equal(osloBruttoFraLtr(data, 50, 2025).aarslonn, 810300)
+  assert.equal(osloBruttoFraStige(data, 931, 2, 16, 2025).aarslonn, 810300)
+  assert.equal(Math.round(810300 / 12), 67525)
+  // 2026-satsen er høyere
+  assert.equal(osloBruttoFraLtr(data, 50, 2026).aarslonn, 843927)
+  // Ugyldig år faller tilbake til 2026
+  assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 843927)
+})
+
 test('KS: Lærer 16 år garantilønn', () => {
   assert.equal(ksGarantilonn(data, 'Lærer', 16), 665400)
 })
