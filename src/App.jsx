@@ -31,6 +31,9 @@ export default function App() {
     ansiennitet: '16',
     alt: 1,
     ltrDirekte: 50,
+    osloOverstyr: false, // lokalt avvik: overstyr LR/ltr
+    osloOverstyrLr: '',
+    osloOverstyrLtr: '',
     ksOverstyr: false,
     ksBrutto: 650000,
     metode: 'tabell',
@@ -51,7 +54,12 @@ export default function App() {
       if (kode.leder || !kode.har_stige) {
         return osloBruttoFraLtr(data, valg.ltrDirekte, aar)?.aarslonn ?? 0
       }
-      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
+      // Lokalt avvik: overstyr lønnstrinn direkte eller velg en annen lønnsramme.
+      if (valg.osloOverstyr && valg.osloOverstyrLtr !== '') {
+        return osloBruttoFraLtr(data, valg.osloOverstyrLtr, aar)?.aarslonn ?? 0
+      }
+      const lr = valg.osloOverstyr && valg.osloOverstyrLr ? valg.osloOverstyrLr : kode.lr
+      return osloBruttoFraStige(data, lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
     }
     // KS
     const kode = data.ks.stillingskoder[valg.ksKode]

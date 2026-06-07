@@ -41,6 +41,15 @@ test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', (
   assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 843927)
 })
 
+test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
+  // Annen lønnsramme enn stillingskoden (lokalt forhandlet)
+  assert.equal(osloBruttoFraStige(data, 928, 2, 16, 2026).ltr,
+    data.oslo.lonnrammer['928']['2']['16'])
+  // Direkte lønnstrinn vinner over rammen
+  assert.equal(osloBruttoFraLtr(data, 55, 2026).aarslonn, data.oslo.lonnstabell_2026['55'])
+  assert.equal(osloBruttoFraLtr(data, 55, 2025).aarslonn, data.oslo.lonnstabell_2025['55'])
+})
+
 test('KS: Lærer 16 år garantilønn', () => {
   assert.equal(ksGarantilonn(data, 'Lærer', 16), 665400)
 })
