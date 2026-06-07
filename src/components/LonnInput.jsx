@@ -31,7 +31,7 @@ function Ansiennitet({ value, onChange }) {
   )
 }
 
-export default function LonnInput({ data, tariff, valg, set }) {
+export default function LonnInput({ data, tariff, valg, set, aar = 2026 }) {
   if (tariff === 'oslo') {
     const kode = data.oslo.stillingskoder[valg.osloKode]
     const erLeder = !!kode?.leder
@@ -62,7 +62,7 @@ export default function LonnInput({ data, tariff, valg, set }) {
     }
 
     // Undervisningspersonale med stige.
-    const oppslag = osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet)
+    const oppslag = osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet, aar)
     return (
       <div className="space-y-4">
         <Ansiennitet

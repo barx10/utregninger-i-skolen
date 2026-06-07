@@ -26,21 +26,26 @@ export const kr2 = (n) =>
 // Lønnsoppslag
 // ---------------------------------------------------------------------------
 
+// Henter riktig Oslo-lønnstabell for valgt år (faller tilbake til 2026).
+export function osloLonnstabell(data, aar = 2026) {
+  return data.oslo[`lonnstabell_${aar}`] ?? data.oslo.lonnstabell_2026
+}
+
 // Oslo undervisningspersonale med ansiennitetsstige.
-export function osloBruttoFraStige(data, lr, alt, ansiennitet) {
+export function osloBruttoFraStige(data, lr, alt, ansiennitet, aar = 2026) {
   const ramme = data.oslo.lonnrammer[String(lr)]
   if (!ramme) return null
   const altObj = ramme[String(alt)]
   if (!altObj) return null
   const ltr = altObj[String(ansiennitet)]
   if (ltr == null) return null
-  const aarslonn = data.oslo.lonnstabell_2026[String(ltr)]
+  const aarslonn = osloLonnstabell(data, aar)[String(ltr)]
   return { ltr, aarslonn }
 }
 
 // Oslo – direkte lønnstrinn (ledere / overstyring).
-export function osloBruttoFraLtr(data, ltr) {
-  const aarslonn = data.oslo.lonnstabell_2026[String(ltr)]
+export function osloBruttoFraLtr(data, ltr, aar = 2026) {
+  const aarslonn = osloLonnstabell(data, aar)[String(ltr)]
   return aarslonn != null ? { ltr: Number(ltr), aarslonn } : null
 }
 

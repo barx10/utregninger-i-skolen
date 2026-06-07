@@ -22,6 +22,7 @@ import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
 
 export default function App() {
   const [tariff, setTariff] = useState('oslo')
+  const [aar, setAar] = useState(2026)
   const [tilleggListe, setTilleggListe] = useState([])
 
   const [valg, setValg] = useState({
@@ -37,8 +38,7 @@ export default function App() {
     nettoManuell: 38000,
     alder: 40,
     forsteYrkesar: false,
-    feriepengegrunnlagOverstyr: false,
-    feriepengegrunnlag: 0,
+    feriepengegrunnlag: '', // tom → estimat basert på årets lønn
   })
 
   const set = (patch) => setValg((v) => ({ ...v, ...patch }))
@@ -49,9 +49,9 @@ export default function App() {
       const kode = data.oslo.stillingskoder[valg.osloKode]
       if (!kode) return 0
       if (kode.leder || !kode.har_stige) {
-        return osloBruttoFraLtr(data, valg.ltrDirekte)?.aarslonn ?? 0
+        return osloBruttoFraLtr(data, valg.ltrDirekte, aar)?.aarslonn ?? 0
       }
-      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet)?.aarslonn ?? 0
+      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
     }
     // KS
     const kode = data.ks.stillingskoder[valg.ksKode]
@@ -59,7 +59,7 @@ export default function App() {
     if (kode.kap === 3) return Number(valg.ksBrutto) || 0
     if (valg.ksOverstyr) return Number(valg.ksBrutto) || 0
     return ksGarantilonn(data, valg.ksKode, valg.ansiennitet) ?? 0
-  }, [tariff, valg])
+  }, [tariff, valg, aar])
 
   const sumTillegg = tilleggListe.reduce((s, t) => s + t.belop, 0)
   const bruttoAarslonn = baseLonn + sumTillegg
@@ -74,12 +74,13 @@ export default function App() {
       nettoManuell: Number(valg.nettoManuell) || 0,
       alder: Number(valg.alder) || 40,
       forsteYrkesar: valg.forsteYrkesar,
-      feriepengegrunnlag: valg.feriepengegrunnlagOverstyr
-        ? Number(valg.feriepengegrunnlag) || bruttoAarslonn
-        : null,
+      feriepengegrunnlag:
+        valg.feriepengegrunnlag !== '' ? Number(valg.feriepengegrunnlag) : null,
       pensjonProsent: 2.0,
     })
   }, [bruttoAarslonn, valg])
+
+  const fpErEstimat = valg.feriepengegrunnlag === ''
 
   return (
     <div className="app-bg min-h-screen">
@@ -118,8 +119,36 @@ export default function App() {
         <Seksjon nr="1" tittel="Tariff og stilling" undertittel="Velg tariffområde og din stillingskode">
           <div className="space-y-6">
             <TariffValg value={tariff} onChange={setTariff} />
+            {tariff === 'oslo' && (
+              <div>
+                <span className="label flex items-center gap-1.5">
+                  Lønnsår
+                  <InfoKnapp tittel="Lønnsår">
+                    Velg 2025 for å sammenligne mot eldre lønnsslipper, eller 2026 for gjeldende
+                    satser. Skatteestimatet bruker 2026-satser uansett – bytt skattemetode til
+                    prosent/manuell for eldre år.
+                  </InfoKnapp>
+                </span>
+                <div className="inline-flex rounded-xl border border-slate-200 bg-white/70 p-1">
+                  {[2025, 2026].map((y) => (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => setAar(y)}
+                      className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+                        aar === y
+                          ? 'bg-brand-600 text-white shadow-soft'
+                          : 'text-slate-600 hover:text-brand-700'
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <StillingsValg data={data} tariff={tariff} valg={valg} set={set} />
-            <LonnInput data={data} tariff={tariff} valg={valg} set={set} />
+            <LonnInput data={data} tariff={tariff} valg={valg} set={set} aar={aar} />
           </div>
         </Seksjon>
 
@@ -171,41 +200,35 @@ export default function App() {
                   </InfoKnapp>
                 </span>
               </label>
-              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+              <div>
+                <span className="label flex items-center gap-1.5">
+                  Feriepengegrunnlag (lønn utbetalt i fjor)
+                  <InfoKnapp tittel="Feriepengegrunnlag">
+                    Feriepenger er 12 % (14,3 % fra 60 år) av <strong>all lønn du fikk utbetalt
+                    forrige kalenderår</strong> – ikke av årets lønn. Finn summen på
+                    desember-lønnsslippen. Sensorgodtgjøring inngår ikke i Oslo.
+                  </InfoKnapp>
+                </span>
                 <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600"
-                  checked={valg.feriepengegrunnlagOverstyr}
-                  onChange={(e) =>
-                    set({
-                      feriepengegrunnlagOverstyr: e.target.checked,
-                      feriepengegrunnlag: bruttoAarslonn,
-                    })
-                  }
+                  type="number"
+                  className="field max-w-[220px]"
+                  placeholder={`Estimat: ${Math.round(bruttoAarslonn)}`}
+                  value={valg.feriepengegrunnlag}
+                  onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
                 />
-                Oppgi feriepengegrunnlag selv
-              </label>
-              {valg.feriepengegrunnlagOverstyr && (
-                <div className="max-w-[220px]">
-                  <input
-                    type="number"
-                    className="field"
-                    value={valg.feriepengegrunnlag}
-                    onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    All lønn utbetalt forrige kalenderår (fra desemberlønnsslipp). Sensor­godtgjøring
-                    inngår ikke i Oslo.
-                  </p>
-                </div>
-              )}
+                <p className="mt-1.5 text-xs text-slate-500">
+                  {fpErEstimat
+                    ? 'La stå tomt for et grovt estimat basert på årets lønn. For et nøyaktig tall, fyll inn fjorårets utbetalte lønn.'
+                    : 'Bruker ditt oppgitte grunnlag fra i fjor.'}
+                </p>
+              </div>
             </div>
           </div>
         </Seksjon>
 
         <Seksjon nr="5" tittel="Resultater" undertittel="Estimert lønn, skatt og feriepenger">
           {resultat ? (
-            <Resultater r={resultat} />
+            <Resultater r={resultat} fpErEstimat={fpErEstimat} />
           ) : (
             <InfoBoks tone="amber">
               Velg stilling og lønn over for å se beregningen.
