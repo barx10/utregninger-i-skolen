@@ -1,0 +1,232 @@
+import { useMemo, useState } from 'react'
+import data from './data/tariff2026.json'
+import logo from './assets/laererliv-logo.png'
+
+import {
+  beregnAlt,
+  osloBruttoFraStige,
+  osloBruttoFraLtr,
+  ksGarantilonn,
+  kr2,
+} from './utils/beregninger.js'
+
+import Seksjon from './components/Seksjon.jsx'
+import TariffValg from './components/TariffValg.jsx'
+import StillingsValg from './components/StillingsValg.jsx'
+import LonnInput from './components/LonnInput.jsx'
+import Tillegg from './components/Tillegg.jsx'
+import Skattevalg from './components/Skattevalg.jsx'
+import Resultater from './components/Resultater.jsx'
+import Arsoversikt from './components/Arsoversikt.jsx'
+import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
+
+export default function App() {
+  const [tariff, setTariff] = useState('oslo')
+  const [tilleggListe, setTilleggListe] = useState([])
+
+  const [valg, setValg] = useState({
+    osloKode: '965', // Lektor
+    ksKode: 'Adjunkt',
+    ansiennitet: '16',
+    alt: 1,
+    ltrDirekte: 50,
+    ksOverstyr: false,
+    ksBrutto: 650000,
+    metode: 'tabell',
+    prosent: 35,
+    nettoManuell: 38000,
+    alder: 40,
+    forsteYrkesar: false,
+    feriepengegrunnlagOverstyr: false,
+    feriepengegrunnlag: 0,
+  })
+
+  const set = (patch) => setValg((v) => ({ ...v, ...patch }))
+
+  // --- Beregn grunnlønn (uten tillegg) ---
+  const baseLonn = useMemo(() => {
+    if (tariff === 'oslo') {
+      const kode = data.oslo.stillingskoder[valg.osloKode]
+      if (!kode) return 0
+      if (kode.leder || !kode.har_stige) {
+        return osloBruttoFraLtr(data, valg.ltrDirekte)?.aarslonn ?? 0
+      }
+      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet)?.aarslonn ?? 0
+    }
+    // KS
+    const kode = data.ks.stillingskoder[valg.ksKode]
+    if (!kode) return 0
+    if (kode.kap === 3) return Number(valg.ksBrutto) || 0
+    if (valg.ksOverstyr) return Number(valg.ksBrutto) || 0
+    return ksGarantilonn(data, valg.ksKode, valg.ansiennitet) ?? 0
+  }, [tariff, valg])
+
+  const sumTillegg = tilleggListe.reduce((s, t) => s + t.belop, 0)
+  const bruttoAarslonn = baseLonn + sumTillegg
+
+  const resultat = useMemo(() => {
+    if (!bruttoAarslonn) return null
+    return beregnAlt({
+      data,
+      bruttoAarslonn,
+      metode: valg.metode,
+      prosent: Number(valg.prosent) || 0,
+      nettoManuell: Number(valg.nettoManuell) || 0,
+      alder: Number(valg.alder) || 40,
+      forsteYrkesar: valg.forsteYrkesar,
+      feriepengegrunnlag: valg.feriepengegrunnlagOverstyr
+        ? Number(valg.feriepengegrunnlag) || bruttoAarslonn
+        : null,
+      pensjonProsent: 2.0,
+    })
+  }, [bruttoAarslonn, valg])
+
+  return (
+    <div className="app-bg min-h-screen">
+      {/* Header */}
+      <header className="border-b border-white/40 bg-white/40 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Lærerliv" className="h-10 w-10 rounded-xl object-contain" />
+            <div>
+              <p className="text-sm font-bold text-slate-800">Lærerøkonomi</p>
+              <p className="text-xs text-slate-500">Lønnskalkulator for skolen</p>
+            </div>
+          </div>
+          <a
+            href="https://laererliv.no"
+            className="hidden rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-300 hover:text-brand-700 sm:block"
+          >
+            laererliv.no
+          </a>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <div className="mx-auto max-w-5xl px-5 pt-10 text-center">
+        <h1 className="bg-gradient-to-r from-brand-700 to-accent-600 bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">
+          Hva sitter du igjen med?
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-slate-600">
+          Beregn lønn, skatt, feriepenger og juniutbetaling for lærere og skoleledere – Oslo og
+          KS. Alt regnes lokalt i nettleseren din.
+        </p>
+      </div>
+
+      {/* Innhold */}
+      <main className="mx-auto max-w-5xl space-y-6 px-5 py-10">
+        <Seksjon nr="1" tittel="Tariff og stilling" undertittel="Velg tariffområde og din stillingskode">
+          <div className="space-y-6">
+            <TariffValg value={tariff} onChange={setTariff} />
+            <StillingsValg data={data} tariff={tariff} valg={valg} set={set} />
+            <LonnInput data={data} tariff={tariff} valg={valg} set={set} />
+          </div>
+        </Seksjon>
+
+        <Seksjon nr="2" tittel="Lønn og tillegg" undertittel="Faste tillegg legges til bruttolønnen">
+          <Tillegg data={data} tariff={tariff} tilleggListe={tilleggListe} set={setTilleggListe} />
+          {sumTillegg > 0 && (
+            <div className="mt-4 flex items-center justify-between rounded-2xl bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
+              <span>Sum tillegg per år</span>
+              <span>{kr2(sumTillegg)}</span>
+            </div>
+          )}
+        </Seksjon>
+
+        <Seksjon nr="3" tittel="Skatt" undertittel="Velg hvordan skatten din trekkes">
+          <Skattevalg valg={valg} set={set} />
+        </Seksjon>
+
+        <Seksjon nr="4" tittel="Personlige forhold" undertittel="Påvirker feriepenger og juniutbetaling">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label className="label">Alder</label>
+              <input
+                type="number"
+                min="18"
+                max="75"
+                className="field max-w-[160px]"
+                value={valg.alder}
+                onChange={(e) => set({ alder: e.target.value })}
+              />
+              {Number(valg.alder) >= 60 && (
+                <p className="mt-2 text-xs font-medium text-emerald-700">
+                  60+: feriepenger beregnes med 14,3 %.
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600"
+                  checked={valg.forsteYrkesar}
+                  onChange={(e) => set({ forsteYrkesar: e.target.checked })}
+                />
+                <span className="flex items-center gap-1.5">
+                  Første yrkesår
+                  <InfoKnapp tittel="Første yrkesår">
+                    Første gangs tiltredelse i skoleverket etter fullført lærerutdanning, ansatt
+                    minst 1 år. Sikrer full lønn i juni selv ved lavt feriepengegrunnlag.
+                  </InfoKnapp>
+                </span>
+              </label>
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-brand-600"
+                  checked={valg.feriepengegrunnlagOverstyr}
+                  onChange={(e) =>
+                    set({
+                      feriepengegrunnlagOverstyr: e.target.checked,
+                      feriepengegrunnlag: bruttoAarslonn,
+                    })
+                  }
+                />
+                Oppgi feriepengegrunnlag selv
+              </label>
+              {valg.feriepengegrunnlagOverstyr && (
+                <div className="max-w-[220px]">
+                  <input
+                    type="number"
+                    className="field"
+                    value={valg.feriepengegrunnlag}
+                    onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    All lønn utbetalt forrige kalenderår (fra desemberlønnsslipp). Sensor­godtgjøring
+                    inngår ikke i Oslo.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Seksjon>
+
+        <Seksjon nr="5" tittel="Resultater" undertittel="Estimert lønn, skatt og feriepenger">
+          {resultat ? (
+            <Resultater r={resultat} />
+          ) : (
+            <InfoBoks tone="amber">
+              Velg stilling og lønn over for å se beregningen.
+            </InfoBoks>
+          )}
+        </Seksjon>
+
+        {resultat && (
+          <Seksjon nr="6" tittel="Årsoversikt" undertittel="Måned for måned gjennom hele året">
+            <Arsoversikt r={resultat} />
+          </Seksjon>
+        )}
+
+        <footer className="pb-6 pt-4 text-center text-xs leading-relaxed text-slate-400">
+          <p>
+            Estimat basert på tariff 2024–2026 (Oslo kommune / KS) og skattesatser for 2026.
+            Faktiske beløp kan avvike. Dobbeltsjekk mot lønnsslipp og skattekort.
+          </p>
+          <p className="mt-1">Datakilde: Utdanningsforbundet, Oslo kommune, KS · Laget for laererliv.no</p>
+        </footer>
+      </main>
+    </div>
+  )
+}
