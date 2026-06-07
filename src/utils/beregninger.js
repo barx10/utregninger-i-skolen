@@ -212,6 +212,7 @@ export function beregnAlt({
   alder = 40,
   forsteYrkesar = false,
   feriepengegrunnlag = null, // hvis null → bruk bruttoAarslonn
+  feriepengerDirekte = null, // oppgitt beløp («Opptjente feriepenger i år») – overstyrer %-beregning
   pensjonProsent = 2.0,
 }) {
   const felles = data.felles
@@ -225,7 +226,11 @@ export function beregnAlt({
   }
 
   const grunnlag = feriepengegrunnlag ?? bruttoAarslonn
-  const { prosent: fpProsent, feriepenger } = beregnFeriepenger(felles, grunnlag, alder)
+  const { prosent: fpProsent, feriepenger: fpBeregnet } = beregnFeriepenger(felles, grunnlag, alder)
+  // Direkte beløp (fra desemberslippen) er mest nøyaktig og overstyrer %-beregningen.
+  const feriepenger = feriepengerDirekte != null ? feriepengerDirekte : fpBeregnet
+  const grunnlagVist =
+    feriepengerDirekte != null ? feriepenger / (fpProsent / 100) : grunnlag
 
   const juni = beregnJuni({
     felles,
@@ -285,7 +290,7 @@ export function beregnAlt({
     skattInfo,
     feriepenger,
     fpProsent,
-    feriepengegrunnlag: grunnlag,
+    feriepengegrunnlag: grunnlagVist,
     juni,
     desember,
     maaneder,

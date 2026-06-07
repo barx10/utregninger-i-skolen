@@ -135,6 +135,19 @@ test('Regresjon mot faktisk lønnsslipp (Oslo, LR931 alt2 ltr50, kontaktlærer)'
   assert.ok(Math.abs(r.feriepenger - 84240.72) < 1, `feriepenger ${r.feriepenger}`)
 })
 
+test('Feriepenger direkte beløp (fra desemberslipp) overstyrer %-beregning', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 829580,
+    metode: 'tabell',
+    alder: 50,
+    feriepengerDirekte: 88126.54, // «Opptjente feriepenger i år»
+  })
+  assert.equal(r.feriepenger, 88126.54)
+  // Vist grunnlag utledes: beløp / 12 %
+  assert.ok(Math.abs(r.feriepengegrunnlag - 88126.54 / 0.12) < 0.01)
+})
+
 test('Feriepengegrunnlag faller tilbake til årets lønn når ikke oppgitt', () => {
   const r = beregnAlt({
     data,
