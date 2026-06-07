@@ -51,16 +51,25 @@ test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
   assert.equal(osloBruttoFraLtr(data, 55, 2025).aarslonn, data.oslo.lonnstabell_2025['55'])
 })
 
-test('KS: Lærer 16 år garantilønn', () => {
-  assert.equal(ksGarantilonn(data, 'Lærer', 16), 665400)
+test('KS: Lærer 16 år garantilønn (1.5.2026)', () => {
+  assert.equal(ksGarantilonn(data, 'Lærer', 16), 639900)
 })
 
 test('Trinnskatt 2026 er progressiv og 0 under første grense', () => {
   assert.equal(beregnTrinnskatt(200000, felles.trinnskatt_2026), 0)
-  // 500 000: trinn 1 (217 400→306 050) 1,7% + trinn 2 (306 050→500 000) 4,0%
+  // 500 000: trinn 1 (226 100→318 300) 1,7% + trinn 2 (318 300→500 000) 4,0%
   const forventet =
-    (306050 - 217400) * 0.017 + (500000 - 306050) * 0.04
+    (318300 - 226100) * 0.017 + (500000 - 318300) * 0.04
   assert.ok(Math.abs(beregnTrinnskatt(500000, felles.trinnskatt_2026) - forventet) < 0.5)
+  // Trinn 5 (17,8 % over 1 467 200) skal være med
+  const hoy = beregnTrinnskatt(1500000, felles.trinnskatt_2026)
+  const forventetHoy =
+    (318300 - 226100) * 0.017 +
+    (725050 - 318300) * 0.04 +
+    (980100 - 725050) * 0.137 +
+    (1467200 - 980100) * 0.168 +
+    (1500000 - 1467200) * 0.178
+  assert.ok(Math.abs(hoy - forventetHoy) < 0.5, `trinn5 ${hoy}`)
 })
 
 test('Årsskatt: pensjon reduserer alminnelig inntekt', () => {

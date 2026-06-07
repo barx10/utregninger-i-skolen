@@ -62,10 +62,10 @@ export default function Skattevalg({ valg, set }) {
               onChange={(e) => set({ tabellnr: e.target.value })}
             />
           </div>
-          <InfoBoks tone={valg.tabellnr ? 'green' : 'blue'}>
+          <InfoBoks tone={valg.tabellnr ? 'green' : 'amber'}>
             {valg.tabellnr
               ? 'Bruker Skatteetatens offisielle tabelltrekk for valgt år – ingen trekk i juni, halvt trekk i desember.'
-              : 'Uten tabellnummer estimeres skatten fra årssatser (trygdeavgift 7,7 %, 22 % alminnelig inntekt, trinnskatt, minstefradrag). Oppgi tabellnummer over for nøyaktig trekk.'}
+              : 'Uten tabellnummer er skatten kun et omtrentlig estimat fra årssatser for 2026 (trygdeavgift 7,6 %, 22 % alminnelig inntekt, trinnskatt, minstefradrag) – det tar ikke hensyn til andre fradrag eller inntekter. Oppgi tabellnummer over for nøyaktig trekk.'}
           </InfoBoks>
         </div>
       )}
