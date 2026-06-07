@@ -22,6 +22,7 @@ import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
 
 export default function App() {
   const [tariff, setTariff] = useState('oslo')
+  const [aar, setAar] = useState(2026)
   const [tilleggListe, setTilleggListe] = useState([])
 
   const [valg, setValg] = useState({
@@ -48,9 +49,9 @@ export default function App() {
       const kode = data.oslo.stillingskoder[valg.osloKode]
       if (!kode) return 0
       if (kode.leder || !kode.har_stige) {
-        return osloBruttoFraLtr(data, valg.ltrDirekte)?.aarslonn ?? 0
+        return osloBruttoFraLtr(data, valg.ltrDirekte, aar)?.aarslonn ?? 0
       }
-      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet)?.aarslonn ?? 0
+      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
     }
     // KS
     const kode = data.ks.stillingskoder[valg.ksKode]
@@ -58,7 +59,7 @@ export default function App() {
     if (kode.kap === 3) return Number(valg.ksBrutto) || 0
     if (valg.ksOverstyr) return Number(valg.ksBrutto) || 0
     return ksGarantilonn(data, valg.ksKode, valg.ansiennitet) ?? 0
-  }, [tariff, valg])
+  }, [tariff, valg, aar])
 
   const sumTillegg = tilleggListe.reduce((s, t) => s + t.belop, 0)
   const bruttoAarslonn = baseLonn + sumTillegg
@@ -118,8 +119,36 @@ export default function App() {
         <Seksjon nr="1" tittel="Tariff og stilling" undertittel="Velg tariffområde og din stillingskode">
           <div className="space-y-6">
             <TariffValg value={tariff} onChange={setTariff} />
+            {tariff === 'oslo' && (
+              <div>
+                <span className="label flex items-center gap-1.5">
+                  Lønnsår
+                  <InfoKnapp tittel="Lønnsår">
+                    Velg 2025 for å sammenligne mot eldre lønnsslipper, eller 2026 for gjeldende
+                    satser. Skatteestimatet bruker 2026-satser uansett – bytt skattemetode til
+                    prosent/manuell for eldre år.
+                  </InfoKnapp>
+                </span>
+                <div className="inline-flex rounded-xl border border-slate-200 bg-white/70 p-1">
+                  {[2025, 2026].map((y) => (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => setAar(y)}
+                      className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+                        aar === y
+                          ? 'bg-brand-600 text-white shadow-soft'
+                          : 'text-slate-600 hover:text-brand-700'
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <StillingsValg data={data} tariff={tariff} valg={valg} set={set} />
-            <LonnInput data={data} tariff={tariff} valg={valg} set={set} />
+            <LonnInput data={data} tariff={tariff} valg={valg} set={set} aar={aar} />
           </div>
         </Seksjon>
 
