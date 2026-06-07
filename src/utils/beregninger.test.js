@@ -41,6 +41,15 @@ test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', (
   assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 843927)
 })
 
+test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
+  // Annen lønnsramme enn stillingskoden (lokalt forhandlet)
+  assert.equal(osloBruttoFraStige(data, 928, 2, 16, 2026).ltr,
+    data.oslo.lonnrammer['928']['2']['16'])
+  // Direkte lønnstrinn vinner over rammen
+  assert.equal(osloBruttoFraLtr(data, 55, 2026).aarslonn, data.oslo.lonnstabell_2026['55'])
+  assert.equal(osloBruttoFraLtr(data, 55, 2025).aarslonn, data.oslo.lonnstabell_2025['55'])
+})
+
 test('KS: Lærer 16 år garantilønn', () => {
   assert.equal(ksGarantilonn(data, 'Lærer', 16), 665400)
 })
@@ -124,6 +133,19 @@ test('Regresjon mot faktisk lønnsslipp (Oslo, LR931 alt2 ltr50, kontaktlærer)'
   })
   assert.ok(Math.abs(r.juni.ferietrekk - 75182.69) < 0.5, `ferietrekk ${r.juni.ferietrekk}`)
   assert.ok(Math.abs(r.feriepenger - 84240.72) < 1, `feriepenger ${r.feriepenger}`)
+})
+
+test('Feriepenger direkte beløp (fra desemberslipp) overstyrer %-beregning', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 829580,
+    metode: 'tabell',
+    alder: 50,
+    feriepengerDirekte: 88126.54, // «Opptjente feriepenger i år»
+  })
+  assert.equal(r.feriepenger, 88126.54)
+  // Vist grunnlag utledes: beløp / 12 %
+  assert.ok(Math.abs(r.feriepengegrunnlag - 88126.54 / 0.12) < 0.01)
 })
 
 test('Feriepengegrunnlag faller tilbake til årets lønn når ikke oppgitt', () => {

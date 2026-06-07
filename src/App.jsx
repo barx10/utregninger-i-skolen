@@ -31,6 +31,10 @@ export default function App() {
     ansiennitet: '16',
     alt: 1,
     ltrDirekte: 50,
+    osloOverstyr: false, // lokalt avvik: overstyr LR/ltr/brutto
+    osloOverstyrLr: '',
+    osloOverstyrLtr: '',
+    osloOverstyrBrutto: '',
     ksOverstyr: false,
     ksBrutto: 650000,
     metode: 'tabell',
@@ -38,7 +42,9 @@ export default function App() {
     nettoManuell: 38000,
     alder: 40,
     forsteYrkesar: false,
+    fpModus: 'belop', // 'belop' = oppgi beløp fra desemberslipp | 'grunnlag' = beregn fra fjorårslønn
     feriepengegrunnlag: '', // tom → estimat basert på årets lønn
+    feriepengerBelop: '', // «Opptjente feriepenger i år» fra desemberslippen
   })
 
   const set = (patch) => setValg((v) => ({ ...v, ...patch }))
@@ -51,7 +57,15 @@ export default function App() {
       if (kode.leder || !kode.har_stige) {
         return osloBruttoFraLtr(data, valg.ltrDirekte, aar)?.aarslonn ?? 0
       }
-      return osloBruttoFraStige(data, kode.lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
+      // Lokalt avvik: brutto direkte > lønnstrinn direkte > annen lønnsramme.
+      if (valg.osloOverstyr && valg.osloOverstyrBrutto !== '') {
+        return Number(valg.osloOverstyrBrutto) || 0
+      }
+      if (valg.osloOverstyr && valg.osloOverstyrLtr !== '') {
+        return osloBruttoFraLtr(data, valg.osloOverstyrLtr, aar)?.aarslonn ?? 0
+      }
+      const lr = valg.osloOverstyr && valg.osloOverstyrLr ? valg.osloOverstyrLr : kode.lr
+      return osloBruttoFraStige(data, lr, valg.alt, valg.ansiennitet, aar)?.aarslonn ?? 0
     }
     // KS
     const kode = data.ks.stillingskoder[valg.ksKode]
@@ -75,12 +89,20 @@ export default function App() {
       alder: Number(valg.alder) || 40,
       forsteYrkesar: valg.forsteYrkesar,
       feriepengegrunnlag:
-        valg.feriepengegrunnlag !== '' ? Number(valg.feriepengegrunnlag) : null,
+        valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag !== ''
+          ? Number(valg.feriepengegrunnlag)
+          : null,
+      feriepengerDirekte:
+        valg.fpModus === 'belop' && valg.feriepengerBelop !== ''
+          ? Number(valg.feriepengerBelop)
+          : null,
       pensjonProsent: 2.0,
     })
   }, [bruttoAarslonn, valg])
 
-  const fpErEstimat = valg.feriepengegrunnlag === ''
+  const fpErEstimat =
+    (valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag === '') ||
+    (valg.fpModus === 'belop' && valg.feriepengerBelop === '')
 
   return (
     <div className="app-bg min-h-screen">
@@ -202,25 +224,69 @@ export default function App() {
               </label>
               <div>
                 <span className="label flex items-center gap-1.5">
-                  Feriepengegrunnlag (lønn utbetalt i fjor)
-                  <InfoKnapp tittel="Feriepengegrunnlag">
-                    Feriepenger er 12 % (14,3 % fra 60 år) av <strong>all lønn du fikk utbetalt
-                    forrige kalenderår</strong> – ikke av årets lønn. Finn summen på
-                    desember-lønnsslippen. Sensorgodtgjøring inngår ikke i Oslo.
+                  Feriepenger
+                  <InfoKnapp tittel="Feriepenger">
+                    Feriepenger du får utbetalt neste juni er opptjent i år. Det <strong>nøyaktige
+                    beløpet</strong> står på desember-lønnsslippen som «Opptjente feriepenger i år».
+                    Alternativt regner appen 12 % (14,3 % fra 60 år) av fjorårets utbetalte lønn.
                   </InfoKnapp>
                 </span>
-                <input
-                  type="number"
-                  className="field max-w-[220px]"
-                  placeholder={`Estimat: ${Math.round(bruttoAarslonn)}`}
-                  value={valg.feriepengegrunnlag}
-                  onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
-                />
-                <p className="mt-1.5 text-xs text-slate-500">
-                  {fpErEstimat
-                    ? 'La stå tomt for et grovt estimat basert på årets lønn. For et nøyaktig tall, fyll inn fjorårets utbetalte lønn.'
-                    : 'Bruker ditt oppgitte grunnlag fra i fjor.'}
-                </p>
+                <div className="mb-3 inline-flex rounded-xl border border-slate-200 bg-white/70 p-1 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => set({ fpModus: 'belop' })}
+                    className={`rounded-lg px-3 py-1.5 font-semibold transition ${
+                      valg.fpModus === 'belop'
+                        ? 'bg-brand-600 text-white shadow-soft'
+                        : 'text-slate-600 hover:text-brand-700'
+                    }`}
+                  >
+                    Beløp fra desemberslipp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => set({ fpModus: 'grunnlag' })}
+                    className={`rounded-lg px-3 py-1.5 font-semibold transition ${
+                      valg.fpModus === 'grunnlag'
+                        ? 'bg-brand-600 text-white shadow-soft'
+                        : 'text-slate-600 hover:text-brand-700'
+                    }`}
+                  >
+                    Beregn fra fjorårslønn
+                  </button>
+                </div>
+                {valg.fpModus === 'belop' ? (
+                  <div>
+                    <label className="label">Opptjente feriepenger i år (fra desemberslipp)</label>
+                    <input
+                      type="number"
+                      className="field max-w-[220px]"
+                      placeholder="F.eks. 88126"
+                      value={valg.feriepengerBelop}
+                      onChange={(e) => set({ feriepengerBelop: e.target.value })}
+                    />
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      Mest nøyaktig: dette er beløpet du faktisk får neste juni. Står på
+                      desember-lønnsslippen under «Opptjente feriepenger i år».
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="label">Feriepengegrunnlag (lønn utbetalt i fjor)</label>
+                    <input
+                      type="number"
+                      className="field max-w-[220px]"
+                      placeholder={`Estimat: ${Math.round(bruttoAarslonn)}`}
+                      value={valg.feriepengegrunnlag}
+                      onChange={(e) => set({ feriepengegrunnlag: e.target.value })}
+                    />
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      {fpErEstimat
+                        ? 'La stå tomt for et grovt estimat basert på årets lønn. For nøyaktig tall: fyll inn fjorårets utbetalte lønn (Lønn honorar m.m. minus feriepenger utbetalt).'
+                        : 'Appen regner 12 % / 14,3 % av dette grunnlaget.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
