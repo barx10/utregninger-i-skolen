@@ -45,5 +45,9 @@ Konfigurert i `vercel.json`. Koble Vercel til GitHub-repoet:
 
 ## Forbehold
 
-Alle beløp er estimat basert på tariff 2024–2026 og skattesatser for 2026.
-Faktiske beløp kan avvike – dobbeltsjekk mot lønnsslipp og skattekort.
+Lønnstall er Oslo kommune / KS-tariff per **1.5.2026**, og skattesatsene er for
+**inntektsåret 2026** (Stortingets skattevedtak). Skatten er et **omtrentlig estimat**
+med mindre du oppgir skattekortets tabellnummer (da brukes Skatteetatens offisielle
+tabelltrekk). Estimatet tar ikke hensyn til andre fradrag, inntekter eller
+individuelle forhold. Faktiske beløp kan avvike – dobbeltsjekk mot lønnsslipp og
+skattekort.

@@ -21,14 +21,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const data = JSON.parse(readFileSync(join(__dirname, '../data/tariff2026.json'), 'utf8'))
 const felles = data.felles
 
-test('Oslo: LR 931 alt 02 ansiennitet 16 → ltr 50 → 843 927', () => {
+test('Oslo: LR 931 alt 02 ansiennitet 16 → ltr 50 → 844 000', () => {
   const r = osloBruttoFraStige(data, 931, 2, 16)
   assert.equal(r.ltr, 50)
-  assert.equal(r.aarslonn, 843927)
+  assert.equal(r.aarslonn, 844000)
 })
 
 test('Oslo: direkte lønnstrinn 50', () => {
-  assert.equal(osloBruttoFraLtr(data, 50).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50).aarslonn, 844000)
 })
 
 test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', () => {
@@ -37,9 +37,9 @@ test('Oslo lønnsår: 2025 vs 2026 for ltr 50 (verifisert mot desemberslipp)', (
   assert.equal(osloBruttoFraStige(data, 931, 2, 16, 2025).aarslonn, 810300)
   assert.equal(Math.round(810300 / 12), 67525)
   // 2026-satsen er høyere
-  assert.equal(osloBruttoFraLtr(data, 50, 2026).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50, 2026).aarslonn, 844000)
   // Ugyldig år faller tilbake til 2026
-  assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 843927)
+  assert.equal(osloBruttoFraLtr(data, 50, 2099).aarslonn, 844000)
 })
 
 test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
@@ -51,16 +51,25 @@ test('Lokalt avvik: overstyr lønnsramme og direkte lønnstrinn', () => {
   assert.equal(osloBruttoFraLtr(data, 55, 2025).aarslonn, data.oslo.lonnstabell_2025['55'])
 })
 
-test('KS: Lærer 16 år garantilønn', () => {
-  assert.equal(ksGarantilonn(data, 'Lærer', 16), 665400)
+test('KS: Lærer 16 år garantilønn (1.5.2026)', () => {
+  assert.equal(ksGarantilonn(data, 'Lærer', 16), 639900)
 })
 
 test('Trinnskatt 2026 er progressiv og 0 under første grense', () => {
   assert.equal(beregnTrinnskatt(200000, felles.trinnskatt_2026), 0)
-  // 500 000: trinn 1 (217 400→306 050) 1,7% + trinn 2 (306 050→500 000) 4,0%
+  // 500 000: trinn 1 (226 100→318 300) 1,7% + trinn 2 (318 300→500 000) 4,0%
   const forventet =
-    (306050 - 217400) * 0.017 + (500000 - 306050) * 0.04
+    (318300 - 226100) * 0.017 + (500000 - 318300) * 0.04
   assert.ok(Math.abs(beregnTrinnskatt(500000, felles.trinnskatt_2026) - forventet) < 0.5)
+  // Trinn 5 (17,8 % over 1 467 200) skal være med
+  const hoy = beregnTrinnskatt(1500000, felles.trinnskatt_2026)
+  const forventetHoy =
+    (318300 - 226100) * 0.017 +
+    (725050 - 318300) * 0.04 +
+    (980100 - 725050) * 0.137 +
+    (1467200 - 980100) * 0.168 +
+    (1500000 - 1467200) * 0.178
+  assert.ok(Math.abs(hoy - forventetHoy) < 0.5, `trinn5 ${hoy}`)
 })
 
 test('Årsskatt: pensjon reduserer alminnelig inntekt', () => {
@@ -192,7 +201,7 @@ test('beregnAlt: tabellTrekkMnd overstyrer estimatet og halveres i desember', ()
 test('beregnAlt: 12 måneder, juni og desember markert', () => {
   const r = beregnAlt({
     data,
-    bruttoAarslonn: 843927,
+    bruttoAarslonn: 844000,
     metode: 'tabell',
     alder: 40,
     pensjonProsent: 2,
@@ -201,5 +210,5 @@ test('beregnAlt: 12 måneder, juni og desember markert', () => {
   assert.equal(r.maaneder[5].type, 'juni')
   assert.equal(r.maaneder[11].type, 'desember')
   assert.ok(r.aar.netto > 0)
-  assert.ok(Math.abs(r.maanedsbrutto - 843927 / 12) < 0.01)
+  assert.ok(Math.abs(r.maanedsbrutto - 844000 / 12) < 0.01)
 })
