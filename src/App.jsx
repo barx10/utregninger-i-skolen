@@ -21,6 +21,7 @@ import Skattevalg from './components/Skattevalg.jsx'
 import Resultater from './components/Resultater.jsx'
 import Arsoversikt from './components/Arsoversikt.jsx'
 import Vikar from './components/Vikar.jsx'
+import Kilder from './components/Kilder.jsx'
 import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
 
 // Medlemsinnskudd til offentlig tjenestepensjon (OPF i Oslo, SPK i KS) trekkes i lønn.
@@ -379,12 +380,22 @@ export default function App() {
           </>
         )}
 
+        <Seksjon id="kilder" nr="i" tittel="Kilder" undertittel="Hvor tallene og reglene kommer fra">
+          <Kilder />
+        </Seksjon>
+
         <footer className="pb-6 pt-4 text-center text-xs leading-relaxed text-slate-400">
           <p>
             Estimat basert på tariff 2024–2026 (Oslo kommune / KS) og skattesatser for 2026.
             Faktiske beløp kan avvike. Dobbeltsjekk mot lønnsslipp og skattekort.
           </p>
-          <p className="mt-1">Datakilde: Utdanningsforbundet, Oslo kommune, KS · Laget for laererliv.no</p>
+          <p className="mt-1">
+            Datakilde: Utdanningsforbundet, Oslo kommune, KS ·{' '}
+            <a href="#kilder" className="underline underline-offset-2 hover:text-slate-600">
+              Se alle kilder
+            </a>{' '}
+            · Laget for laererliv.no
+          </p>
         </footer>
       </main>
     </div>

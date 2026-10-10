@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
 
 // Standard seksjonskort med nummer, tittel og animert innfelling.
-export default function Seksjon({ nr, tittel, undertittel, children }) {
+export default function Seksjon({ id, nr, tittel, undertittel, children }) {
   return (
     <motion.section
+      id={id}
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
