@@ -135,12 +135,35 @@ export function feriepengeProsent(felles, alder) {
   return alder >= 60 ? felles.feriepenger.over60 : felles.feriepenger.under60
 }
 
-export function beregnFeriepenger(felles, feriepengegrunnlag, alder) {
+// Grunnbeløpet som gjaldt 31. desember i opptjeningsåret (faller tilbake til siste kjente).
+export function grunnbelop(felles, opptjeningsaar) {
+  const g = felles.grunnbelop
+  return g[String(opptjeningsaar)] ?? g[Object.keys(g).sort().at(-1)]
+}
+
+// Feriepenger. Med G oppgitt gis 60+-tillegget (2,3 %) bare av grunnlag opp til
+// 6G (ferieloven § 10 nr. 3, gjelder KS). Uten G gis full sats av hele grunnlaget
+// (Oslo kommune har avtalt unntak fra taket).
+export function beregnFeriepenger(felles, feriepengegrunnlag, alder, G = null) {
   const prosent = feriepengeProsent(felles, alder)
-  return {
-    prosent,
-    feriepenger: feriepengegrunnlag * (prosent / 100),
+  const basis = felles.feriepenger.under60
+  const tak = G ? felles.feriepenger.tak_over60_G * G : Infinity
+  const begrenset = prosent > basis && feriepengegrunnlag > tak
+  const feriepenger = begrenset
+    ? feriepengegrunnlag * (basis / 100) + tak * ((prosent - basis) / 100)
+    : feriepengegrunnlag * (prosent / 100)
+  return { prosent, feriepenger, begrenset, tak }
+}
+
+// Motsatt vei: grunnlaget som gir et oppgitt feriepengebeløp.
+export function feriepengegrunnlagFraBelop(felles, feriepenger, alder, G = null) {
+  const prosent = feriepengeProsent(felles, alder)
+  const basis = felles.feriepenger.under60
+  const tak = G ? felles.feriepenger.tak_over60_G * G : Infinity
+  if (prosent > basis && feriepenger > tak * (prosent / 100)) {
+    return (feriepenger - tak * ((prosent - basis) / 100)) / (basis / 100)
   }
+  return feriepenger / (prosent / 100)
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +264,7 @@ export function beregnAlt({
   feriepengerDirekte = null, // oppgitt beløp («Opptjente feriepenger i år») – overstyrer %-beregning
   tabellTrekkMnd = null, // nøyaktig månedlig tabelltrekk fra Skatteetatens tabell – overstyrer estimatet
   pensjonProsent = 2.0,
+  grunnbelop: G = null, // G for 6G-taket på 60+-tillegget (KS); null = ingen tak (Oslo)
 }) {
   const felles = data.felles
   const maanedsbrutto = bruttoAarslonn / 12
@@ -258,11 +282,17 @@ export function beregnAlt({
   }
 
   const grunnlag = feriepengegrunnlag ?? bruttoAarslonn
-  const { prosent: fpProsent, feriepenger: fpBeregnet } = beregnFeriepenger(felles, grunnlag, alder)
+  const {
+    prosent: fpProsent,
+    feriepenger: fpBeregnet,
+    begrenset: fpBegrenset,
+  } = beregnFeriepenger(felles, grunnlag, alder, G)
   // Direkte beløp (fra desemberslippen) er mest nøyaktig og overstyrer %-beregningen.
   const feriepenger = feriepengerDirekte != null ? feriepengerDirekte : fpBeregnet
   const grunnlagVist =
-    feriepengerDirekte != null ? feriepenger / (fpProsent / 100) : grunnlag
+    feriepengerDirekte != null
+      ? feriepengegrunnlagFraBelop(felles, feriepenger, alder, G)
+      : grunnlag
 
   const juni = beregnJuni({
     felles,
@@ -326,6 +356,8 @@ export function beregnAlt({
     skattInfo,
     feriepenger,
     fpProsent,
+    fpBegrenset: feriepengerDirekte == null && fpBegrenset,
+    fpTak: G ? felles.feriepenger.tak_over60_G * G : null,
     brukerTabell,
     trekkMnd,
     feriepengegrunnlag: grunnlagVist,

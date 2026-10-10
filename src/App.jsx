@@ -8,6 +8,7 @@ import {
   osloBruttoFraLtr,
   ksGarantilonn,
   tabellTrekkMaaned,
+  grunnbelop,
   kr2,
 } from './utils/beregninger.js'
 
@@ -131,8 +132,11 @@ export default function App() {
           : null,
       tabellTrekkMnd,
       pensjonProsent: PENSJON_PROSENT,
+      // 6G-taket på 60+-tillegget gjelder i KS, ikke i Oslo kommune. Feriepengene i juni
+      // er opptjent i fjor, så G per 31.12. i fjor brukes.
+      grunnbelop: tariff === 'ks' ? grunnbelop(data.felles, aar - 1) : null,
     })
-  }, [bruttoAarslonn, valg, tabellTrekkMnd])
+  }, [bruttoAarslonn, valg, tabellTrekkMnd, tariff, aar])
 
   const fpErEstimat =
     (valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag === '') ||
@@ -266,7 +270,8 @@ export default function App() {
                   />
                   {Number(valg.alder) >= 60 && (
                     <p className="mt-2 text-xs font-medium text-emerald-700">
-                      60+: feriepenger beregnes med 14,3 %.
+                      60+: feriepenger beregnes med 14,3 %
+                  {tariff === 'ks' ? ' (tillegget på 2,3 % gis bare av grunnlag opp til 6G).' : '.'}
                     </p>
                   )}
                 </div>

@@ -269,7 +269,7 @@ export default function Vikar({ data, tariff, aarslonn, nrStart }) {
                 label="Feriepenger"
                 verdi={resultat.feriepenger}
                 tone="juni"
-                info={`${resultat.fpProsent} % av bruttolønnen. Timelønnen er uten feriepenger, så de kommer i tillegg. De utbetales normalt i juni året etter, eller på siste lønningsdag hvis arbeidsforholdet avsluttes.`}
+                info={`${String(resultat.fpProsent).replace(".", ",")} % av bruttolønnen. Timelønnen er uten feriepenger, så de kommer i tillegg. De utbetales normalt i juni året etter, eller på siste lønningsdag hvis arbeidsforholdet avsluttes.`}
               />
             </div>
 
@@ -309,7 +309,7 @@ export default function Vikar({ data, tariff, aarslonn, nrStart }) {
 
             <InfoBoks tone="green" tittel="Ingen trekk for ferie">
               Som timelønnet vikar får du bare betalt for timene du jobber, så du får ikke trekk i lønn
-              for ferie slik fast ansatte får i juni. Feriepengene på {resultat.fpProsent} % er det du får
+              for ferie slik fast ansatte får i juni. Feriepengene på {String(resultat.fpProsent).replace(".", ",")} % er det du får
               for ferien. Får du senere fast stilling, regnes feriepengene første sommer av det du tjente
               som vikar året før, mens lønnen trekkes for fem ukers ferie.
             </InfoBoks>

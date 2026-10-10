@@ -17,6 +17,8 @@ import {
   beregnAlt,
   vikarSatsUndervisning,
   beregnVikar,
+  grunnbelop,
+  feriepengegrunnlagFraBelop,
 } from './beregninger.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -310,4 +312,44 @@ test('Oppgi netto selv: netto blir det brukeren oppga, også med pensjonstrekk',
     pensjonProsent: 2,
   })
   assert.ok(Math.abs(r.ordinaerNetto - 36000) < 0.01)
+})
+
+test('60+ i KS: tillegget på 2,3 % bare av grunnlag opp til 6G', () => {
+  const G = grunnbelop(felles, 2025)
+  assert.equal(G, 130160)
+  const tak = 6 * G // 780 960
+  const r = beregnFeriepenger(felles, 850000, 62, G)
+  assert.equal(r.begrenset, true)
+  assert.ok(Math.abs(r.feriepenger - (850000 * 0.12 + tak * 0.023)) < 0.01)
+  // Under taket: full 14,3 %
+  const lav = beregnFeriepenger(felles, 700000, 62, G)
+  assert.equal(lav.begrenset, false)
+  assert.ok(Math.abs(lav.feriepenger - 700000 * 0.143) < 0.01)
+  // Under 60: taket påvirker ikke
+  assert.ok(Math.abs(beregnFeriepenger(felles, 850000, 40, G).feriepenger - 102000) < 0.01)
+  // Motsatt vei gir samme grunnlag
+  assert.ok(Math.abs(feriepengegrunnlagFraBelop(felles, r.feriepenger, 62, G) - 850000) < 0.01)
+})
+
+test('60+ i Oslo: ingen 6G-tak (Dok 25 § 3.1.4)', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 850000,
+    metode: 'tabell',
+    alder: 62,
+    feriepengegrunnlag: 850000,
+    grunnbelop: null,
+  })
+  assert.ok(Math.abs(r.feriepenger - 850000 * 0.143) < 0.01)
+  assert.equal(r.fpBegrenset, false)
+  const ks = beregnAlt({
+    data,
+    bruttoAarslonn: 850000,
+    metode: 'tabell',
+    alder: 62,
+    feriepengegrunnlag: 850000,
+    grunnbelop: 130160,
+  })
+  assert.equal(ks.fpBegrenset, true)
+  assert.ok(ks.feriepenger < r.feriepenger)
 })
