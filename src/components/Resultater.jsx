@@ -55,7 +55,7 @@ export default function Resultater({ r, fpErEstimat = false }) {
           label="Netto i juni"
           verdi={r.juni.netto}
           tone="juni"
-          info="Månedslønn + trekkfritt feriepengetillegg. Ferietrekk for 25 dager er gjort."
+          info="Månedslønn + feriepenger − trekk for 25 feriedager (5 uker). Se oppstillingen under."
         />
         <Stat
           label="Netto i desember"
@@ -64,6 +64,34 @@ export default function Resultater({ r, fpErEstimat = false }) {
           info={r.desember.merknad || 'Desemberlønn'}
         />
         <Stat label="Skatt per måned" verdi={r.ordinaerSkatt} />
+      </div>
+
+      {/* Juni: feriepenger og ferietrekk */}
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+        <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+          Juni: feriepenger og trekk for ferie
+          <InfoKnapp tittel="Ferietrekk">
+            Fast ansatte får trukket lønn for fem ukers ferie (årslønn / 260 × 25 dager) i juni,
+            samme måned som feriepengene utbetales. Feriepengene regnes av fjorårets lønn. Var
+            fjorårslønnen lav, for eksempel fordi du var vikar eller begynte sent på året, blir
+            feriepengene lavere enn trekket og junilønnen lav.
+          </InfoKnapp>
+        </p>
+        <dl className="grid max-w-md gap-y-2 text-sm">
+          <Rad k="Månedslønn" v={r.maanedsbrutto} />
+          <Rad k={`Feriepenger (${r.fpProsent} %)`} v={r.feriepenger} />
+          <Rad k="Trekk for ferie (25 dager)" v={-r.juni.ferietrekk} />
+          <Rad k="Feriepenger minus trekk" v={r.juni.feriepengetillegg} />
+          <Rad k="Skattetrekk i juni" v={r.juni.skatt ? -r.juni.skatt : 0} />
+          <Rad k="Utbetalt i juni" v={r.juni.netto} sum />
+        </dl>
+        {r.feriepenger < r.juni.ferietrekk && (
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {r.juni.merknad === 'Første yrkesår: full lønn garantert'
+              ? 'Feriepengene er lavere enn trekket for ferie, men første yrkesår gir full lønn i juni.'
+              : `Feriepengene er ${kr2(r.juni.ferietrekk - r.feriepenger)} lavere enn trekket for ferie, så junilønnen blir lavere enn en vanlig måned.`}
+          </p>
+        )}
       </div>
 
       {/* Detaljer skatt */}
@@ -106,9 +134,13 @@ export default function Resultater({ r, fpErEstimat = false }) {
   )
 }
 
-function Rad({ k, v, raa }) {
+function Rad({ k, v, raa, sum }) {
   return (
-    <div className="flex justify-between border-b border-slate-100 py-1.5 text-slate-600">
+    <div
+      className={`flex justify-between py-1.5 ${
+        sum ? 'font-semibold text-slate-800' : 'border-b border-slate-100 text-slate-600'
+      }`}
+    >
       <dt>{k}</dt>
       <dd className="font-medium text-slate-800">{raa ? v : kr2(v)}</dd>
     </div>
