@@ -8,6 +8,7 @@ const farger = {
 
 export default function Arsoversikt({ r }) {
   const maxNetto = Math.max(...r.maaneder.map((m) => m.netto))
+  const visPensjon = r.pensjonMnd > 0
 
   return (
     <div className="space-y-8">
@@ -46,7 +47,7 @@ export default function Arsoversikt({ r }) {
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-400">
               <th className="py-2 pr-4 font-semibold">Måned</th>
               <th className="py-2 pr-4 text-right font-semibold">Brutto</th>
-              <th className="py-2 pr-4 text-right font-semibold">Pensjon</th>
+              {visPensjon && <th className="py-2 pr-4 text-right font-semibold">Pensjon</th>}
               <th className="py-2 pr-4 text-right font-semibold">Skatt</th>
               <th className="py-2 pr-4 text-right font-semibold">Netto</th>
               <th className="py-2 font-semibold">Merknad</th>
@@ -62,7 +63,7 @@ export default function Arsoversikt({ r }) {
               >
                 <td className="py-2.5 pr-4 text-slate-700">{m.navn}</td>
                 <td className="py-2.5 pr-4 text-right text-slate-600">{kr2(m.brutto)}</td>
-                <td className="py-2.5 pr-4 text-right text-slate-600">{kr2(m.pensjon)}</td>
+                {visPensjon && <td className="py-2.5 pr-4 text-right text-slate-600">{kr2(m.pensjon)}</td>}
                 <td className="py-2.5 pr-4 text-right text-slate-600">{kr2(m.skatt)}</td>
                 <td className="py-2.5 pr-4 text-right font-semibold text-slate-800">
                   {kr2(m.netto)}
@@ -75,7 +76,7 @@ export default function Arsoversikt({ r }) {
             <tr className="border-t-2 border-slate-200 font-bold text-slate-800">
               <td className="py-3 pr-4">Sum år</td>
               <td className="py-3 pr-4 text-right">{kr2(r.aar.brutto)}</td>
-              <td className="py-3 pr-4 text-right">{kr2(r.aar.pensjon)}</td>
+              {visPensjon && <td className="py-3 pr-4 text-right">{kr2(r.aar.pensjon)}</td>}
               <td className="py-3 pr-4 text-right">{kr2(r.aar.skatt)}</td>
               <td className="py-3 pr-4 text-right text-brand-700">{kr2(r.aar.netto)}</td>
               <td />

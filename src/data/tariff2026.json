@@ -2820,8 +2820,9 @@
       "slutt_loennstrinn": true
     },
     "pensjon": {
-      "prosent": 2.0,
-      "leverandor": "OPF"
+      "prosent": 0,
+      "leverandor": "SPK",
+      "merknad": "Arbeidstaker har rett til pensjon uten betaling av pensjonspremie (Dok 25 del A § 7). Ingen trekk i lønn."
     }
   },
   "ks": {
@@ -2939,7 +2940,8 @@
     },
     "pensjon": {
       "prosent": 2.0,
-      "leverandor": "SPK"
+      "leverandor": "SPK",
+      "merknad": "Medlemsinnskudd på 2 % trekkes i lønn."
     }
   },
   "felles": {

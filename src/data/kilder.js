@@ -31,7 +31,7 @@ export const KILDER = [
       {
         navn: 'Tariffavtalen for Oslo kommune, del A (Dok 25)',
         url: 'https://www.utdanningsforbundet.no/lonn-og-arbeidsvilkar/tariffavtaler/oslo-kommune/oslo-kommune-tariffavtaler/tariffavtalen-for-oslo-kommune-del-a',
-        brukt: 'Feriepenger, 60+ uten 6G-tak (§ 3.1.4 og § 3.2.2)',
+        brukt: 'Pensjon uten egen premie (§ 7), feriepenger og 60+ uten 6G-tak (§ 3.1.4 og § 3.2.2)',
       },
       {
         navn: 'Tariffavtalen for Oslo kommune, del C',
@@ -76,12 +76,17 @@ export const KILDER = [
     ],
   },
   {
-    tema: 'Ferie og feriepenger',
+    tema: 'Ferie, feriepenger og pensjon',
     lenker: [
       {
         navn: 'Ferieloven kapittel 3 (Lovdata)',
         url: 'https://lovdata.no/dokument/NL/lov/1988-04-29-21/KAPITTEL_3',
         brukt: 'Feriepenger og 6G-tak for tillegget til ansatte over 60 år (§ 10)',
+      },
+      {
+        navn: 'Statens pensjonskasse: Lærerne er medlem av SPK',
+        url: 'https://www.spk.no/medlemskap-i-spk/larerne-er-medlem-av-statens-pensjonskasse/',
+        brukt: 'Medlemsinnskudd på 2 % trekkes i lønn (KS)',
       },
       {
         navn: 'NAV: Grunnbeløpet i folketrygden',

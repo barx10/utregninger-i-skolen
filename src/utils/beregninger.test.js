@@ -353,3 +353,21 @@ test('60+ i Oslo: ingen 6G-tak (Dok 25 § 3.1.4)', () => {
   assert.equal(ks.fpBegrenset, true)
   assert.ok(ks.feriepenger < r.feriepenger)
 })
+
+test('Regresjon mot junislipp 2026 (Oslo, ltr 50 på 2025-nivå, kontaktlærer): netto til øret', () => {
+  // Slipp juni 2026: månedslønn 67 525 + kontaktlærer 1 606,67, ferietrekk
+  // −77 913,46 og −1 853,85, feriepenger 88 126,54, ingen skatt og ingen pensjonstrekk.
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 810300 + 19280,
+    metode: 'tabell',
+    alder: 50,
+    feriepengerDirekte: 88126.54,
+    tabellTrekkMnd: 21000,
+    pensjonProsent: data.oslo.pensjon.prosent,
+  })
+  assert.equal(r.pensjonMnd, 0)
+  assert.ok(Math.abs(r.juni.ferietrekk - (77913.46 + 1853.85)) < 0.02, `ferietrekk ${r.juni.ferietrekk}`)
+  assert.equal(r.juni.skatt, 0)
+  assert.ok(Math.abs(r.juni.netto - 77490.9) < 0.02, `netto ${r.juni.netto}`)
+})

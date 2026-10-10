@@ -24,9 +24,6 @@ import Vikar from './components/Vikar.jsx'
 import Kilder from './components/Kilder.jsx'
 import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
 
-// Medlemsinnskudd til offentlig tjenestepensjon (OPF i Oslo, SPK i KS) trekkes i lønn.
-const PENSJON_PROSENT = 2.0
-
 export default function App() {
   const [modus, setModus] = useState('fast') // 'fast' | 'vikar'
   const [tariff, setTariff] = useState('oslo')
@@ -85,6 +82,10 @@ export default function App() {
     return ksGarantilonn(data, valg.ksKode, valg.ansiennitet) ?? 0
   }, [tariff, valg, aar])
 
+  // Medlemsinnskudd til SPK: 2 % trekkes i lønn i KS. Oslo kommune betaler hele
+  // premien (Dok 25 del A § 7), så der er det ikke noe trekk.
+  const pensjonProsent = data[tariff].pensjon.prosent
+
   const sumTillegg = tilleggListe.reduce((s, t) => s + t.belop, 0)
   const bruttoAarslonn = baseLonn + sumTillegg
 
@@ -109,7 +110,7 @@ export default function App() {
       ? tabellTrekkMaaned(
           skattetabell[aar],
           valg.tabellnr,
-          (bruttoAarslonn / 12) * (1 - PENSJON_PROSENT / 100),
+          (bruttoAarslonn / 12) * (1 - pensjonProsent / 100),
         )
       : null
 
@@ -132,12 +133,12 @@ export default function App() {
           ? Number(valg.feriepengerBelop)
           : null,
       tabellTrekkMnd,
-      pensjonProsent: PENSJON_PROSENT,
+      pensjonProsent,
       // 6G-taket på 60+-tillegget gjelder i KS, ikke i Oslo kommune. Feriepengene i juni
       // er opptjent i fjor, så G per 31.12. i fjor brukes.
       grunnbelop: tariff === 'ks' ? grunnbelop(data.felles, aar - 1) : null,
     })
-  }, [bruttoAarslonn, valg, tabellTrekkMnd, tariff, aar])
+  }, [bruttoAarslonn, valg, tabellTrekkMnd, tariff, aar, pensjonProsent])
 
   const fpErEstimat =
     (valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag === '') ||
