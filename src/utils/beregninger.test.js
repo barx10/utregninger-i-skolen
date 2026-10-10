@@ -265,3 +265,49 @@ test('Vikar: blandede økter, skatt og feriepenger', () => {
   assert.ok(Math.abs(r.netto - r.brutto * 0.7) < 0.01)
   assert.ok(Math.abs(r.feriepenger - r.brutto * 0.12) < 0.01)
 })
+
+test('Pensjonstrekk 2 % trekkes fra netto hver måned', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 840000,
+    metode: 'tabell',
+    alder: 40,
+    tabellTrekkMnd: 20000,
+    feriepengegrunnlag: 840000,
+    pensjonProsent: 2,
+  })
+  assert.equal(r.pensjonMnd, 1400)
+  assert.equal(r.ordinaerNetto, 70000 - 1400 - 20000)
+  assert.equal(r.desember.netto, 70000 - 1400 - 10000)
+  assert.ok(Math.abs(r.juni.netto - (70000 - 1400 + r.juni.feriepengetillegg)) < 0.01)
+  assert.ok(Math.abs(r.aar.pensjon - 1400 * 12) < 0.01)
+  assert.ok(Math.abs(r.aar.brutto - r.aar.pensjon - r.aar.skatt - r.aar.netto) < 0.01)
+})
+
+test('Prosenttrekk: grunnlag etter pensjon, og feriepenger skattlegges i juni', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 600000,
+    metode: 'prosent',
+    prosent: 30,
+    alder: 40,
+    feriepengegrunnlag: 600000,
+    pensjonProsent: 2,
+  })
+  assert.ok(Math.abs(r.ordinaerSkatt - (50000 - 1000) * 0.3) < 0.01)
+  const juniGrunnlag = 50000 - 1000 + r.juni.feriepengetillegg
+  assert.ok(Math.abs(r.juni.skatt - juniGrunnlag * 0.3) < 0.01)
+  assert.ok(Math.abs(r.juni.netto - juniGrunnlag * 0.7) < 0.01)
+})
+
+test('Oppgi netto selv: netto blir det brukeren oppga, også med pensjonstrekk', () => {
+  const r = beregnAlt({
+    data,
+    bruttoAarslonn: 600000,
+    metode: 'manuell',
+    nettoManuell: 36000,
+    alder: 40,
+    pensjonProsent: 2,
+  })
+  assert.ok(Math.abs(r.ordinaerNetto - 36000) < 0.01)
+})

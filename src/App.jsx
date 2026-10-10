@@ -22,6 +22,9 @@ import Arsoversikt from './components/Arsoversikt.jsx'
 import Vikar from './components/Vikar.jsx'
 import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
 
+// Medlemsinnskudd til offentlig tjenestepensjon (OPF i Oslo, SPK i KS) trekkes i lønn.
+const PENSJON_PROSENT = 2.0
+
 export default function App() {
   const [modus, setModus] = useState('fast') // 'fast' | 'vikar'
   const [tariff, setTariff] = useState('oslo')
@@ -101,7 +104,11 @@ export default function App() {
 
   const tabellTrekkMnd =
     valg.metode === 'tabell' && valg.tabellnr && skattetabell[aar]
-      ? tabellTrekkMaaned(skattetabell[aar], valg.tabellnr, bruttoAarslonn / 12)
+      ? tabellTrekkMaaned(
+          skattetabell[aar],
+          valg.tabellnr,
+          (bruttoAarslonn / 12) * (1 - PENSJON_PROSENT / 100),
+        )
       : null
 
   const resultat = useMemo(() => {
@@ -123,7 +130,7 @@ export default function App() {
           ? Number(valg.feriepengerBelop)
           : null,
       tabellTrekkMnd,
-      pensjonProsent: 2.0,
+      pensjonProsent: PENSJON_PROSENT,
     })
   }, [bruttoAarslonn, valg, tabellTrekkMnd])
 

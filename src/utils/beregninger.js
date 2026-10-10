@@ -147,22 +147,25 @@ export function beregnFeriepenger(felles, feriepengegrunnlag, alder) {
 // Måneds-, juni- og desemberberegning
 // ---------------------------------------------------------------------------
 
-// Skattetrekk på én ordinær månedslønn for valgt metode.
+// Skattetrekk på én ordinær månedslønn for valgt metode. Pensjonstrekket
+// (ctx.pensjonMnd) reduserer trekkgrunnlaget.
 export function maanedsSkatt(metode, maanedsbrutto, ctx) {
+  const trekkgrunnlag = maanedsbrutto - (ctx.pensjonMnd ?? 0)
   switch (metode) {
     case 'tabell':
       return ctx.trekkPerMaaned
     case 'prosent':
-      return maanedsbrutto * (ctx.prosent / 100)
+      return trekkgrunnlag * (ctx.prosent / 100)
     case 'manuell':
-      return Math.max(0, maanedsbrutto - ctx.nettoManuell)
+      return Math.max(0, trekkgrunnlag - ctx.nettoManuell)
     default:
       return 0
   }
 }
 
-// Juni: feriepengetillegg er trekkfritt. Junilønn skattes etter metode –
-// med tabelltrekk er juni en trekkfri måned (skatten er fordelt på 10,5 mnd).
+// Juni: med tabelltrekk er juni en trekkfri måned (skatten er fordelt på
+// 10,5 mnd) og feriepengene trekkfrie. Med prosenttrekk trekkes skatt av
+// månedslønn, ferietrekk og feriepenger samlet.
 export function beregnJuni({
   felles,
   maanedsbrutto,
@@ -183,17 +186,21 @@ export function beregnJuni({
     merknad = 'Første yrkesår: full lønn garantert'
   }
 
-  // I juni trekkes ikke skatt på selve månedslønnen ved tabelltrekk.
-  const skatteJunilonn =
-    metode === 'tabell' ? 0 : maanedsSkatt(metode, maanedsbrutto, skatteCtx)
+  const pensjon = skatteCtx.pensjonMnd ?? 0
+  let skatt
+  if (metode === 'tabell') skatt = 0
+  else if (metode === 'prosent')
+    skatt = Math.max(0, maanedsbrutto - pensjon + feriepengetillegg) * (skatteCtx.prosent / 100)
+  else skatt = maanedsSkatt(metode, maanedsbrutto, skatteCtx)
 
   const brutto = maanedsbrutto + feriepengetillegg
-  const netto = maanedsbrutto - skatteJunilonn + feriepengetillegg
+  const netto = maanedsbrutto - pensjon - skatt + feriepengetillegg
 
   return {
     ferietrekk,
     feriepengetillegg,
-    skatt: skatteJunilonn,
+    pensjon,
+    skatt,
     brutto,
     netto,
     merknad,
@@ -208,10 +215,12 @@ export function beregnDesember({ maanedsbrutto, metode, skatteCtx }) {
     skatt = skatt / 2
     merknad = 'Halvt skattetrekk'
   }
+  const pensjon = skatteCtx.pensjonMnd ?? 0
   return {
     brutto: maanedsbrutto,
+    pensjon,
     skatt,
-    netto: maanedsbrutto - skatt,
+    netto: maanedsbrutto - pensjon - skatt,
     merknad,
   }
 }
@@ -235,6 +244,7 @@ export function beregnAlt({
 }) {
   const felles = data.felles
   const maanedsbrutto = bruttoAarslonn / 12
+  const pensjonMnd = maanedsbrutto * (pensjonProsent / 100)
 
   const skattInfo = beregnArsskatt(bruttoAarslonn, felles, pensjonProsent)
   // Bruk nøyaktig tabelltrekk hvis oppgitt, ellers det beregnede estimatet.
@@ -244,6 +254,7 @@ export function beregnAlt({
     trekkPerMaaned: trekkMnd,
     prosent,
     nettoManuell,
+    pensjonMnd,
   }
 
   const grunnlag = feriepengegrunnlag ?? bruttoAarslonn
@@ -273,6 +284,7 @@ export function beregnAlt({
         navn,
         kort: navn.slice(0, 3),
         brutto: juni.brutto,
+        pensjon: juni.pensjon,
         skatt: juni.skatt,
         netto: juni.netto,
         merknad: juni.merknad,
@@ -284,6 +296,7 @@ export function beregnAlt({
         navn,
         kort: navn.slice(0, 3),
         brutto: desember.brutto,
+        pensjon: desember.pensjon,
         skatt: desember.skatt,
         netto: desember.netto,
         merknad: desember.merknad,
@@ -294,14 +307,16 @@ export function beregnAlt({
       navn,
       kort: navn.slice(0, 3),
       brutto: maanedsbrutto,
+      pensjon: pensjonMnd,
       skatt: ordinaerSkatt,
-      netto: maanedsbrutto - ordinaerSkatt,
+      netto: maanedsbrutto - pensjonMnd - ordinaerSkatt,
       merknad: '',
       type: 'ordinaer',
     }
   })
 
   const aarBrutto = maaneder.reduce((s, m) => s + m.brutto, 0)
+  const aarPensjon = maaneder.reduce((s, m) => s + m.pensjon, 0)
   const aarSkatt = maaneder.reduce((s, m) => s + m.skatt, 0)
   const aarNetto = maaneder.reduce((s, m) => s + m.netto, 0)
 
@@ -317,8 +332,9 @@ export function beregnAlt({
     juni,
     desember,
     maaneder,
-    aar: { brutto: aarBrutto, skatt: aarSkatt, netto: aarNetto },
-    ordinaerNetto: maanedsbrutto - ordinaerSkatt,
+    pensjonMnd,
+    aar: { brutto: aarBrutto, pensjon: aarPensjon, skatt: aarSkatt, netto: aarNetto },
+    ordinaerNetto: maanedsbrutto - pensjonMnd - ordinaerSkatt,
     ordinaerSkatt,
   }
 }
