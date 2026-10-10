@@ -328,3 +328,53 @@ export function osloKontaktlarer(data, antallElever) {
   const k = data.oslo.kontaktlaerer
   return k.grunnbelop + antallElever * k.per_elev
 }
+
+// ---------------------------------------------------------------------------
+// Vikar / timelønn
+// ---------------------------------------------------------------------------
+
+// Timelønn for én undervisningstime på 60 minutter (årsramme i 60-minuttersenheter).
+// Oslo (del C pkt. 3.1.8.2): t1 = årslønn × 1500 / (årsramme × 1687,5), t2 = 80 % av t1.
+// KS (HTA § 12.4): årslønn × 1400 × 100 / (årsramme × 1687,5 × 112). Feriepenger kommer i tillegg.
+export function vikarSatsUndervisning(data, tariff, aarslonn, aarsramme60, tilfeldig = false) {
+  const v = data.vikar
+  if (!aarsramme60) return 0
+  if (tariff === 'oslo') {
+    const t1 = (aarslonn * v.oslo.undervisning_faktor) / (aarsramme60 * v.aarsverk)
+    return tilfeldig ? t1 * (v.oslo.tilfeldig_prosent / 100) : t1
+  }
+  return (aarslonn * v.ks.undervisning_faktor * 100) / (aarsramme60 * v.aarsverk * v.ks.feriepenge_deler)
+}
+
+// Timelønn for arbeid utenom undervisning (klokketime): årslønn / 1850.
+export function vikarSatsAnnet(data, aarslonn) {
+  return aarslonn / data.vikar.annet_arbeid_deler
+}
+
+// Beregner lønn for en liste økter. Hver økt: { type: 'undervisning' | 'annet',
+// minutter, antall, aarsramme60 }. Satsen skaleres lineært med øktlengden.
+export function beregnVikar({ data, tariff, aarslonn, okter, tilfeldig, skatteprosent, alder }) {
+  const rader = okter.map((o) => {
+    const minutter = Number(o.minutter) || 0
+    const antall = Number(o.antall) || 0
+    const timesats =
+      o.type === 'annet'
+        ? vikarSatsAnnet(data, aarslonn)
+        : vikarSatsUndervisning(data, tariff, aarslonn, Number(o.aarsramme60), tilfeldig)
+    const perOkt = timesats * (minutter / 60)
+    return { ...o, timesats, perOkt, timer: (minutter * antall) / 60, sum: perOkt * antall }
+  })
+  const brutto = rader.reduce((s, r) => s + r.sum, 0)
+  const timer = rader.reduce((s, r) => s + r.timer, 0)
+  const skatt = brutto * ((Number(skatteprosent) || 0) / 100)
+  const fpProsent = feriepengeProsent(data.felles, Number(alder) || 40)
+  return {
+    rader,
+    timer,
+    brutto,
+    skatt,
+    netto: brutto - skatt,
+    fpProsent,
+    feriepenger: brutto * (fpProsent / 100),
+  }
+}

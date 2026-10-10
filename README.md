@@ -16,6 +16,11 @@ Laget for [laererliv.no](https://laererliv.no).
 - **Feriepenger:** 12 % / 14,3 % (60+), korrekt ferietrekk (årslønn/260 × 25 dager).
 - **Spesialregler:** Første yrkesår (full lønn i juni), halv skatt i desember, pensjonsfradrag.
 - **Årsoversikt:** 12-måneders tabell + stolpegraf med juni og desember markert.
+- **Vikar (timelønn):** Egen modus for timelønnede vikarer. Legg inn økter med valgfri
+  lengde (30/45/60/90 min eller egen), type arbeid og trinn/fag. Undervisning regnes etter
+  årsrammen for faget: Oslo `årslønn × 1500 / (årsramme × 1687,5)` (t1, 80 % for tilfeldige
+  vikartimer, t2), KS `årslønn × 1400 × 100 / (årsramme × 1687,5 × 112)` (HTA § 12.4).
+  Annet arbeid: `årslønn / 1850` per klokketime. Viser brutto, prosenttrekk, netto og feriepenger.
 
 ## Teknisk
 

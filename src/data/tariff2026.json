@@ -2989,5 +2989,104 @@
       "merknad": "Full lønn i juni uansett feriepengegrunnlag",
       "gjelder": "Første gangs tiltredelse i skoleverket etter fullført utdanning, ansatt minst 1 år"
     }
+  },
+  "vikar": {
+    "kilde": "Oslo: Tariffavtalen for Oslo kommune del C pkt. 3.1.8.2 (t1, t2, t3). KS: Hovedtariffavtalen § 12.4. Årsrammer: SFS 2213 vedlegg 1 / Oslo del C pkt. 3.3.8.",
+    "aarsverk": 1687.5,
+    "annet_arbeid_deler": 1850,
+    "oslo": {
+      "undervisning_faktor": 1500,
+      "tilfeldig_prosent": 80
+    },
+    "ks": {
+      "undervisning_faktor": 1400,
+      "feriepenge_deler": 112
+    },
+    "aarsrammer": [
+      {
+        "id": "barn",
+        "label": "Barnetrinnet – alle fag",
+        "r60": 741,
+        "r45": 988
+      },
+      {
+        "id": "u-norsk",
+        "label": "Ungdomstrinnet – norsk",
+        "r60": 606,
+        "r45": 808
+      },
+      {
+        "id": "u-eng",
+        "label": "Ungdomstrinnet – engelsk, mat og helse",
+        "r60": 635,
+        "r45": 847
+      },
+      {
+        "id": "u-ovrige",
+        "label": "Ungdomstrinnet – øvrige fag",
+        "r60": 664,
+        "r45": 885
+      },
+      {
+        "id": "u-khkro",
+        "label": "Ungdomstrinnet – kunst og håndverk, kroppsøving",
+        "r60": 711,
+        "r45": 948
+      },
+      {
+        "id": "vgs-642",
+        "label": "Videregående – årsramme 642/856",
+        "r60": 642,
+        "r45": 856
+      },
+      {
+        "id": "vgs-635",
+        "label": "Videregående – årsramme 635/847",
+        "r60": 635,
+        "r45": 847
+      },
+      {
+        "id": "vgs-607",
+        "label": "Videregående – årsramme 607,5/810",
+        "r60": 607.5,
+        "r45": 810
+      },
+      {
+        "id": "vgs-583",
+        "label": "Videregående – årsramme 583,5/778",
+        "r60": 583.5,
+        "r45": 778
+      },
+      {
+        "id": "vgs-569",
+        "label": "Videregående – årsramme 569/759",
+        "r60": 569,
+        "r45": 759
+      },
+      {
+        "id": "vgs-554",
+        "label": "Videregående – årsramme 554/739",
+        "r60": 554,
+        "r45": 739
+      },
+      {
+        "id": "vgs-525",
+        "label": "Videregående – årsramme 525/700",
+        "r60": 525,
+        "r45": 700
+      },
+      {
+        "id": "vgs-496",
+        "label": "Videregående – årsramme 496/661",
+        "r60": 496,
+        "r45": 661
+      },
+      {
+        "id": "vgs-466",
+        "label": "Videregående – årsramme 466,5/622",
+        "r60": 466.5,
+        "r45": 622
+      }
+    ]
   }
 }

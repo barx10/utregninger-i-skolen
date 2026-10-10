@@ -15,6 +15,8 @@ import {
   beregnJuni,
   beregnDesember,
   beregnAlt,
+  vikarSatsUndervisning,
+  beregnVikar,
 } from './beregninger.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -211,4 +213,55 @@ test('beregnAlt: 12 måneder, juni og desember markert', () => {
   assert.equal(r.maaneder[11].type, 'desember')
   assert.ok(r.aar.netto > 0)
   assert.ok(Math.abs(r.maanedsbrutto - 844000 / 12) < 0.01)
+})
+
+test('Vikar Oslo: t1 og t2 for barnetrinnet, ltr 50', () => {
+  // 844 000 × 1500 / (741 × 1687,5) = 1012,45 per 60 min
+  const t1 = vikarSatsUndervisning(data, 'oslo', 844000, 741)
+  assert.ok(Math.abs(t1 - 1012.45) < 0.01)
+  const t2 = vikarSatsUndervisning(data, 'oslo', 844000, 741, true)
+  assert.ok(Math.abs(t2 - t1 * 0.8) < 1e-9)
+})
+
+test('Vikar KS: HTA § 12.4-formelen', () => {
+  // 650 000 × 1400 × 100 / (525 × 1687,5 × 112) = 917,11
+  const t = vikarSatsUndervisning(data, 'ks', 650000, 525)
+  assert.ok(Math.abs(t - 917.11) < 0.01)
+  // Tilfeldig-valget gjelder bare Oslo
+  assert.equal(vikarSatsUndervisning(data, 'ks', 650000, 525, true), t)
+})
+
+test('Vikar: 45-minuttersøkt med 60-ramme = sats med 45-ramme', () => {
+  const r = beregnVikar({
+    data,
+    tariff: 'oslo',
+    aarslonn: 600000,
+    okter: [{ type: 'undervisning', minutter: 45, antall: 1, aarsramme60: 741 }],
+    tilfeldig: false,
+    skatteprosent: 0,
+    alder: 40,
+  })
+  const via45 = (600000 * 1500) / (988 * 1687.5)
+  assert.ok(Math.abs(r.brutto - via45) < 0.01)
+})
+
+test('Vikar: blandede økter, skatt og feriepenger', () => {
+  const r = beregnVikar({
+    data,
+    tariff: 'ks',
+    aarslonn: 555000,
+    okter: [
+      { type: 'undervisning', minutter: 60, antall: 2, aarsramme60: 741 },
+      { type: 'annet', minutter: 90, antall: 1 },
+    ],
+    tilfeldig: false,
+    skatteprosent: 30,
+    alder: 40,
+  })
+  const und = (555000 * 1400 * 100) / (741 * 1687.5 * 112)
+  const annet = (555000 / 1850) * 1.5
+  assert.ok(Math.abs(r.brutto - (2 * und + annet)) < 0.01)
+  assert.equal(r.timer, 3.5)
+  assert.ok(Math.abs(r.netto - r.brutto * 0.7) < 0.01)
+  assert.ok(Math.abs(r.feriepenger - r.brutto * 0.12) < 0.01)
 })
