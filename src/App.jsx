@@ -8,6 +8,7 @@ import {
   osloBruttoFraLtr,
   ksGarantilonn,
   tabellTrekkMaaned,
+  grunnbelop,
   kr2,
 } from './utils/beregninger.js'
 
@@ -20,7 +21,11 @@ import Skattevalg from './components/Skattevalg.jsx'
 import Resultater from './components/Resultater.jsx'
 import Arsoversikt from './components/Arsoversikt.jsx'
 import Vikar from './components/Vikar.jsx'
+import Kilder from './components/Kilder.jsx'
 import { InfoBoks, InfoKnapp } from './components/InfoBoks.jsx'
+
+// Medlemsinnskudd til offentlig tjenestepensjon (OPF i Oslo, SPK i KS) trekkes i lønn.
+const PENSJON_PROSENT = 2.0
 
 export default function App() {
   const [modus, setModus] = useState('fast') // 'fast' | 'vikar'
@@ -101,7 +106,11 @@ export default function App() {
 
   const tabellTrekkMnd =
     valg.metode === 'tabell' && valg.tabellnr && skattetabell[aar]
-      ? tabellTrekkMaaned(skattetabell[aar], valg.tabellnr, bruttoAarslonn / 12)
+      ? tabellTrekkMaaned(
+          skattetabell[aar],
+          valg.tabellnr,
+          (bruttoAarslonn / 12) * (1 - PENSJON_PROSENT / 100),
+        )
       : null
 
   const resultat = useMemo(() => {
@@ -123,9 +132,12 @@ export default function App() {
           ? Number(valg.feriepengerBelop)
           : null,
       tabellTrekkMnd,
-      pensjonProsent: 2.0,
+      pensjonProsent: PENSJON_PROSENT,
+      // 6G-taket på 60+-tillegget gjelder i KS, ikke i Oslo kommune. Feriepengene i juni
+      // er opptjent i fjor, så G per 31.12. i fjor brukes.
+      grunnbelop: tariff === 'ks' ? grunnbelop(data.felles, aar - 1) : null,
     })
-  }, [bruttoAarslonn, valg, tabellTrekkMnd])
+  }, [bruttoAarslonn, valg, tabellTrekkMnd, tariff, aar])
 
   const fpErEstimat =
     (valg.fpModus === 'grunnlag' && valg.feriepengegrunnlag === '') ||
@@ -259,7 +271,8 @@ export default function App() {
                   />
                   {Number(valg.alder) >= 60 && (
                     <p className="mt-2 text-xs font-medium text-emerald-700">
-                      60+: feriepenger beregnes med 14,3 %.
+                      60+: feriepenger beregnes med 14,3 %
+                  {tariff === 'ks' ? ' (tillegget på 2,3 % gis bare av grunnlag opp til 6G).' : '.'}
                     </p>
                   )}
                 </div>
@@ -367,12 +380,22 @@ export default function App() {
           </>
         )}
 
+        <Seksjon id="kilder" nr="i" tittel="Kilder" undertittel="Hvor tallene og reglene kommer fra">
+          <Kilder />
+        </Seksjon>
+
         <footer className="pb-6 pt-4 text-center text-xs leading-relaxed text-slate-400">
           <p>
             Estimat basert på tariff 2024–2026 (Oslo kommune / KS) og skattesatser for 2026.
             Faktiske beløp kan avvike. Dobbeltsjekk mot lønnsslipp og skattekort.
           </p>
-          <p className="mt-1">Datakilde: Utdanningsforbundet, Oslo kommune, KS · Laget for laererliv.no</p>
+          <p className="mt-1">
+            Datakilde: Utdanningsforbundet, Oslo kommune, KS ·{' '}
+            <a href="#kilder" className="underline underline-offset-2 hover:text-slate-600">
+              Se alle kilder
+            </a>{' '}
+            · Laget for laererliv.no
+          </p>
         </footer>
       </main>
     </div>

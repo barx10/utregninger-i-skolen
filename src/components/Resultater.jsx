@@ -37,7 +37,7 @@ export default function Resultater({ r, fpErEstimat = false }) {
           label="Netto per måned"
           verdi={r.ordinaerNetto}
           tone="brand"
-          info="Ordinær måned (jan–mai, jul–nov). Juni og desember skiller seg ut."
+          info={`Ordinær måned (jan–mai, jul–nov) etter skatt og pensjonstrekk på 2 % (${kr2(r.pensjonMnd)}). Juni og desember skiller seg ut.`}
         />
       </div>
 
@@ -46,9 +46,12 @@ export default function Resultater({ r, fpErEstimat = false }) {
           label={fpErEstimat ? 'Feriepenger (estimat)' : 'Feriepenger'}
           verdi={r.feriepenger}
           info={
-            fpErEstimat
-              ? `${r.fpProsent} % av et estimert grunnlag (${kr2(r.feriepengegrunnlag)} = årets lønn). Feriepenger beregnes egentlig av FJORÅRETS utbetalte lønn – fyll inn det i seksjon 4 for et nøyaktig tall.`
-              : `${r.fpProsent} % av feriepengegrunnlaget fra i fjor (${kr2(r.feriepengegrunnlag)}).`
+            (fpErEstimat
+              ? `${String(r.fpProsent).replace(".", ",")} % av et estimert grunnlag (${kr2(r.feriepengegrunnlag)} = årets lønn). Feriepenger beregnes egentlig av FJORÅRETS utbetalte lønn – fyll inn det i seksjon 4 for et nøyaktig tall.`
+              : `${String(r.fpProsent).replace(".", ",")} % av feriepengegrunnlaget fra i fjor (${kr2(r.feriepengegrunnlag)}).`) +
+            (r.fpBegrenset
+              ? ` Tillegget på 2,3 % for 60+ er bare regnet av grunnlag opp til 6G (${kr2(r.fpTak)}), jf. ferieloven § 10. Over det gis 12 %.`
+              : '')
           }
         />
         <Stat
@@ -79,9 +82,13 @@ export default function Resultater({ r, fpErEstimat = false }) {
         </p>
         <dl className="grid max-w-md gap-y-2 text-sm">
           <Rad k="Månedslønn" v={r.maanedsbrutto} />
-          <Rad k={`Feriepenger (${r.fpProsent} %)`} v={r.feriepenger} />
+          <Rad
+            k={r.fpBegrenset ? `Feriepenger (${String(r.fpProsent).replace(".", ",")} % opp til 6G, 12 % over)` : `Feriepenger (${String(r.fpProsent).replace(".", ",")} %)`}
+            v={r.feriepenger}
+          />
           <Rad k="Trekk for ferie (25 dager)" v={-r.juni.ferietrekk} />
           <Rad k="Feriepenger minus trekk" v={r.juni.feriepengetillegg} />
+          <Rad k="Pensjonstrekk (2 %)" v={-r.juni.pensjon} />
           <Rad k="Skattetrekk i juni" v={r.juni.skatt ? -r.juni.skatt : 0} />
           <Rad k="Utbetalt i juni" v={r.juni.netto} sum />
         </dl>

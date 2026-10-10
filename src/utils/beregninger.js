@@ -135,34 +135,60 @@ export function feriepengeProsent(felles, alder) {
   return alder >= 60 ? felles.feriepenger.over60 : felles.feriepenger.under60
 }
 
-export function beregnFeriepenger(felles, feriepengegrunnlag, alder) {
+// Grunnbeløpet som gjaldt 31. desember i opptjeningsåret (faller tilbake til siste kjente).
+export function grunnbelop(felles, opptjeningsaar) {
+  const g = felles.grunnbelop
+  return g[String(opptjeningsaar)] ?? g[Object.keys(g).sort().at(-1)]
+}
+
+// Feriepenger. Med G oppgitt gis 60+-tillegget (2,3 %) bare av grunnlag opp til
+// 6G (ferieloven § 10 nr. 3, gjelder KS). Uten G gis full sats av hele grunnlaget
+// (Oslo kommune har avtalt unntak fra taket).
+export function beregnFeriepenger(felles, feriepengegrunnlag, alder, G = null) {
   const prosent = feriepengeProsent(felles, alder)
-  return {
-    prosent,
-    feriepenger: feriepengegrunnlag * (prosent / 100),
+  const basis = felles.feriepenger.under60
+  const tak = G ? felles.feriepenger.tak_over60_G * G : Infinity
+  const begrenset = prosent > basis && feriepengegrunnlag > tak
+  const feriepenger = begrenset
+    ? feriepengegrunnlag * (basis / 100) + tak * ((prosent - basis) / 100)
+    : feriepengegrunnlag * (prosent / 100)
+  return { prosent, feriepenger, begrenset, tak }
+}
+
+// Motsatt vei: grunnlaget som gir et oppgitt feriepengebeløp.
+export function feriepengegrunnlagFraBelop(felles, feriepenger, alder, G = null) {
+  const prosent = feriepengeProsent(felles, alder)
+  const basis = felles.feriepenger.under60
+  const tak = G ? felles.feriepenger.tak_over60_G * G : Infinity
+  if (prosent > basis && feriepenger > tak * (prosent / 100)) {
+    return (feriepenger - tak * ((prosent - basis) / 100)) / (basis / 100)
   }
+  return feriepenger / (prosent / 100)
 }
 
 // ---------------------------------------------------------------------------
 // Måneds-, juni- og desemberberegning
 // ---------------------------------------------------------------------------
 
-// Skattetrekk på én ordinær månedslønn for valgt metode.
+// Skattetrekk på én ordinær månedslønn for valgt metode. Pensjonstrekket
+// (ctx.pensjonMnd) reduserer trekkgrunnlaget.
 export function maanedsSkatt(metode, maanedsbrutto, ctx) {
+  const trekkgrunnlag = maanedsbrutto - (ctx.pensjonMnd ?? 0)
   switch (metode) {
     case 'tabell':
       return ctx.trekkPerMaaned
     case 'prosent':
-      return maanedsbrutto * (ctx.prosent / 100)
+      return trekkgrunnlag * (ctx.prosent / 100)
     case 'manuell':
-      return Math.max(0, maanedsbrutto - ctx.nettoManuell)
+      return Math.max(0, trekkgrunnlag - ctx.nettoManuell)
     default:
       return 0
   }
 }
 
-// Juni: feriepengetillegg er trekkfritt. Junilønn skattes etter metode –
-// med tabelltrekk er juni en trekkfri måned (skatten er fordelt på 10,5 mnd).
+// Juni: med tabelltrekk er juni en trekkfri måned (skatten er fordelt på
+// 10,5 mnd) og feriepengene trekkfrie. Med prosenttrekk trekkes skatt av
+// månedslønn, ferietrekk og feriepenger samlet.
 export function beregnJuni({
   felles,
   maanedsbrutto,
@@ -183,17 +209,21 @@ export function beregnJuni({
     merknad = 'Første yrkesår: full lønn garantert'
   }
 
-  // I juni trekkes ikke skatt på selve månedslønnen ved tabelltrekk.
-  const skatteJunilonn =
-    metode === 'tabell' ? 0 : maanedsSkatt(metode, maanedsbrutto, skatteCtx)
+  const pensjon = skatteCtx.pensjonMnd ?? 0
+  let skatt
+  if (metode === 'tabell') skatt = 0
+  else if (metode === 'prosent')
+    skatt = Math.max(0, maanedsbrutto - pensjon + feriepengetillegg) * (skatteCtx.prosent / 100)
+  else skatt = maanedsSkatt(metode, maanedsbrutto, skatteCtx)
 
   const brutto = maanedsbrutto + feriepengetillegg
-  const netto = maanedsbrutto - skatteJunilonn + feriepengetillegg
+  const netto = maanedsbrutto - pensjon - skatt + feriepengetillegg
 
   return {
     ferietrekk,
     feriepengetillegg,
-    skatt: skatteJunilonn,
+    pensjon,
+    skatt,
     brutto,
     netto,
     merknad,
@@ -208,10 +238,12 @@ export function beregnDesember({ maanedsbrutto, metode, skatteCtx }) {
     skatt = skatt / 2
     merknad = 'Halvt skattetrekk'
   }
+  const pensjon = skatteCtx.pensjonMnd ?? 0
   return {
     brutto: maanedsbrutto,
+    pensjon,
     skatt,
-    netto: maanedsbrutto - skatt,
+    netto: maanedsbrutto - pensjon - skatt,
     merknad,
   }
 }
@@ -232,9 +264,11 @@ export function beregnAlt({
   feriepengerDirekte = null, // oppgitt beløp («Opptjente feriepenger i år») – overstyrer %-beregning
   tabellTrekkMnd = null, // nøyaktig månedlig tabelltrekk fra Skatteetatens tabell – overstyrer estimatet
   pensjonProsent = 2.0,
+  grunnbelop: G = null, // G for 6G-taket på 60+-tillegget (KS); null = ingen tak (Oslo)
 }) {
   const felles = data.felles
   const maanedsbrutto = bruttoAarslonn / 12
+  const pensjonMnd = maanedsbrutto * (pensjonProsent / 100)
 
   const skattInfo = beregnArsskatt(bruttoAarslonn, felles, pensjonProsent)
   // Bruk nøyaktig tabelltrekk hvis oppgitt, ellers det beregnede estimatet.
@@ -244,14 +278,21 @@ export function beregnAlt({
     trekkPerMaaned: trekkMnd,
     prosent,
     nettoManuell,
+    pensjonMnd,
   }
 
   const grunnlag = feriepengegrunnlag ?? bruttoAarslonn
-  const { prosent: fpProsent, feriepenger: fpBeregnet } = beregnFeriepenger(felles, grunnlag, alder)
+  const {
+    prosent: fpProsent,
+    feriepenger: fpBeregnet,
+    begrenset: fpBegrenset,
+  } = beregnFeriepenger(felles, grunnlag, alder, G)
   // Direkte beløp (fra desemberslippen) er mest nøyaktig og overstyrer %-beregningen.
   const feriepenger = feriepengerDirekte != null ? feriepengerDirekte : fpBeregnet
   const grunnlagVist =
-    feriepengerDirekte != null ? feriepenger / (fpProsent / 100) : grunnlag
+    feriepengerDirekte != null
+      ? feriepengegrunnlagFraBelop(felles, feriepenger, alder, G)
+      : grunnlag
 
   const juni = beregnJuni({
     felles,
@@ -273,6 +314,7 @@ export function beregnAlt({
         navn,
         kort: navn.slice(0, 3),
         brutto: juni.brutto,
+        pensjon: juni.pensjon,
         skatt: juni.skatt,
         netto: juni.netto,
         merknad: juni.merknad,
@@ -284,6 +326,7 @@ export function beregnAlt({
         navn,
         kort: navn.slice(0, 3),
         brutto: desember.brutto,
+        pensjon: desember.pensjon,
         skatt: desember.skatt,
         netto: desember.netto,
         merknad: desember.merknad,
@@ -294,14 +337,16 @@ export function beregnAlt({
       navn,
       kort: navn.slice(0, 3),
       brutto: maanedsbrutto,
+      pensjon: pensjonMnd,
       skatt: ordinaerSkatt,
-      netto: maanedsbrutto - ordinaerSkatt,
+      netto: maanedsbrutto - pensjonMnd - ordinaerSkatt,
       merknad: '',
       type: 'ordinaer',
     }
   })
 
   const aarBrutto = maaneder.reduce((s, m) => s + m.brutto, 0)
+  const aarPensjon = maaneder.reduce((s, m) => s + m.pensjon, 0)
   const aarSkatt = maaneder.reduce((s, m) => s + m.skatt, 0)
   const aarNetto = maaneder.reduce((s, m) => s + m.netto, 0)
 
@@ -311,14 +356,17 @@ export function beregnAlt({
     skattInfo,
     feriepenger,
     fpProsent,
+    fpBegrenset: feriepengerDirekte == null && fpBegrenset,
+    fpTak: G ? felles.feriepenger.tak_over60_G * G : null,
     brukerTabell,
     trekkMnd,
     feriepengegrunnlag: grunnlagVist,
     juni,
     desember,
     maaneder,
-    aar: { brutto: aarBrutto, skatt: aarSkatt, netto: aarNetto },
-    ordinaerNetto: maanedsbrutto - ordinaerSkatt,
+    pensjonMnd,
+    aar: { brutto: aarBrutto, pensjon: aarPensjon, skatt: aarSkatt, netto: aarNetto },
+    ordinaerNetto: maanedsbrutto - pensjonMnd - ordinaerSkatt,
     ordinaerSkatt,
   }
 }
