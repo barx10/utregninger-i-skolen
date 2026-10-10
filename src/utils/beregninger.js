@@ -365,6 +365,7 @@ export function beregnAlt({
     desember,
     maaneder,
     pensjonMnd,
+    pensjonProsent,
     aar: { brutto: aarBrutto, pensjon: aarPensjon, skatt: aarSkatt, netto: aarNetto },
     ordinaerNetto: maanedsbrutto - pensjonMnd - ordinaerSkatt,
     ordinaerSkatt,

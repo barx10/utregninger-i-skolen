@@ -37,7 +37,7 @@ export default function Resultater({ r, fpErEstimat = false }) {
           label="Netto per måned"
           verdi={r.ordinaerNetto}
           tone="brand"
-          info={`Ordinær måned (jan–mai, jul–nov) etter skatt og pensjonstrekk på 2 % (${kr2(r.pensjonMnd)}). Juni og desember skiller seg ut.`}
+          info={`Ordinær måned (jan–mai, jul–nov) etter skatt${r.pensjonMnd > 0 ? ` og pensjonstrekk på ${String(r.pensjonProsent).replace('.', ',')} % (${kr2(r.pensjonMnd)})` : ''}. Juni og desember skiller seg ut.`}
         />
       </div>
 
@@ -88,7 +88,7 @@ export default function Resultater({ r, fpErEstimat = false }) {
           />
           <Rad k="Trekk for ferie (25 dager)" v={-r.juni.ferietrekk} />
           <Rad k="Feriepenger minus trekk" v={r.juni.feriepengetillegg} />
-          <Rad k="Pensjonstrekk (2 %)" v={-r.juni.pensjon} />
+          {r.juni.pensjon > 0 && <Rad k="Pensjonstrekk (2 %)" v={-r.juni.pensjon} />}
           <Rad k="Skattetrekk i juni" v={r.juni.skatt ? -r.juni.skatt : 0} />
           <Rad k="Utbetalt i juni" v={r.juni.netto} sum />
         </dl>
@@ -125,7 +125,7 @@ export default function Resultater({ r, fpErEstimat = false }) {
           <Rad k="Skatt alminnelig inntekt (22 %)" v={r.skattInfo.skattAlminnelig} />
           <Rad k="Trinnskatt" v={r.skattInfo.trinnskatt} />
           <Rad k="Minstefradrag" v={r.skattInfo.minstefradrag} />
-          <Rad k="Pensjonsinnskudd (2 %)" v={r.skattInfo.pensjon} />
+          {r.skattInfo.pensjon > 0 && <Rad k="Pensjonsinnskudd (2 %)" v={r.skattInfo.pensjon} />}
           <Rad
             k="Effektiv skatt"
             v={`${r.skattInfo.effektivProsent.toFixed(1)} %`}
